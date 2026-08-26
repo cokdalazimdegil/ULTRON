@@ -1,5 +1,3 @@
-Aşağıdaki Markdown içeriğini doğrudan kopyalayıp GitHub deponuzun **README.md** dosyasına yapıştırabilirsiniz:
-
 ```markdown
 # 🤖 U.L.T.R.O.N — Kişisel Yapay Zeka Asistanı & Otonom Bilgisayar Kontrolü
 
