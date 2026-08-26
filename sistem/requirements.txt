@@ -3,6 +3,7 @@
 
 # ── Core AI & LLM ────────────────────────────────────────────
 google-genai>=1.0.0
+chromadb>=0.5.0
 
 # ── Voice Biometrics & Audio ─────────────────────────────────
 onnxruntime>=1.18.0

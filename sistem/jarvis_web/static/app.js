@@ -95,7 +95,9 @@ const S = {
   activeQrMode: "cloud",
   geoWatchId: null,
   lastCoords: null,
-  activeAgentCount: 0
+  activeAgentCount: 0,
+  wakeLock: null,        // Screen wake lock (PWA mobilte ekran uyumasın)
+  pushSubscription: null // Web Push subscription
 };
 
 const $ = (id) => document.getElementById(id);
@@ -764,6 +766,8 @@ function showProactiveAlert(alert) {
 // ── Mikrofon (DSP Gürültü Engelleme & Netlik Filtresi) ────────────────────
 async function startMic() {
   if (S.micOn) return;
+  // İlk mikrofon aktivasyonunda push bildirim izni iste
+  requestPushPermission().catch(() => {});
   try {
     S.micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -1422,6 +1426,10 @@ async function initApp() {
 
   initLocationTracking();
 
+  // PWA: Mobil ekran uyanık tut + Push bildirimleri
+  initWakeLock();
+  initPushNotifications();
+
   if (S.public) {
     S.apiKey = localStorage.getItem("ultron_gemini_key") || "";
     if (!S.apiKey) {
@@ -1430,6 +1438,80 @@ async function initApp() {
     }
   }
   connect();
+}
+
+// ── PWA: Screen Wake Lock — Mobil cihazda ekran uyumasını engelle ────────
+async function initWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  const acquireWakeLock = async () => {
+    try {
+      S.wakeLock = await navigator.wakeLock.request("screen");
+      S.wakeLock.addEventListener("release", () => {
+        S.wakeLock = null;
+      });
+    } catch (err) {
+      // İzin reddedildi veya desteklenmiyor — sessizce devam et
+    }
+  };
+  await acquireWakeLock();
+  // Sayfa tekrar görünür olunca (arka plandan dönünce) yeniden al
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible" && !S.wakeLock) {
+      await acquireWakeLock();
+    }
+  });
+}
+
+// ── PWA: Web Push Bildirimleri ────────────────────────────────────────────
+async function initPushNotifications() {
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+  // Sadece zaten izin verilmişse otomatik abone ol
+  if (Notification.permission === "granted") {
+    await subscribeToPush();
+  }
+  // İzin henüz sorulmamışsa: kullanıcı mikrofonla ilk konuştuğunda sor
+  // (startMic() çağrıldığında tetiklenir — aşağıda)
+}
+
+async function requestPushPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      await subscribeToPush();
+    }
+  }
+}
+
+async function subscribeToPush() {
+  try {
+    if (S.pushSubscription) return;
+    const reg = await navigator.serviceWorker.ready;
+    // VAPID public key'i sunucudan al
+    const resp = await fetch("/api/push/vapid-public-key");
+    if (!resp.ok) return;
+    const { public_key } = await resp.json();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(public_key),
+    });
+    S.pushSubscription = sub;
+    // Subscription'ı sunucuya kaydet
+    await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sub.toJSON()),
+    });
+  } catch (err) {
+    // Push kurulumu sessizce başarısız olabilir
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
 initApp();

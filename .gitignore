@@ -1,4 +1,4 @@
-﻿# Python virtual environments
+# Python virtual environments
 .venv/
 venv/
 sistem/.venv/
@@ -51,6 +51,8 @@ memory/speaker_profiles.json
 memory/voice_profiles.json
 memory/active_timers.json
 memory/learned_stylometry.json
+memory/chroma_db/
+memory/vector_fallback.json
 sistem/memory/memory.json
 sistem/memory/memory_v2.json
 sistem/memory/phone_book.json
@@ -62,12 +64,16 @@ sistem/memory/speaker_profiles.json
 sistem/memory/voice_profiles.json
 sistem/memory/active_timers.json
 sistem/memory/learned_stylometry.json
+sistem/memory/chroma_db/
+sistem/memory/vector_fallback.json
 
 # Web personal artifacts & certs
 jarvis_web/web_config.json
 jarvis_web/certs/
+jarvis_web/push_subscriptions.json
 sistem/jarvis_web/web_config.json
 sistem/jarvis_web/certs/
+sistem/jarvis_web/push_subscriptions.json
 
 # Logs & Archives
 *.log

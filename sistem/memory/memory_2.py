@@ -1,5 +1,6 @@
-﻿"""
+"""
 ULTRON Intelligent Memory 2.0 Subsystem (RAG & Semantic Tiered Storage)
+Vector destegi: ChromaDB ile anlamsal arama, JSON ile fallback.
 """
 
 from __future__ import annotations
@@ -99,7 +100,8 @@ class IntelligentMemoryManager:
             except Exception as e:
                 logger.error(f"Memory v2 kaydetme hatası: {e}")
 
-    def store(self, key: str, content: str, tier: MemoryTier = MemoryTier.SEMANTIC_MEMORY, importance: float = 0.5, metadata: dict[str, Any] | None = None) -> None:
+    def store(self, key: str, content: str, tier: MemoryTier = MemoryTier.SEMANTIC_MEMORY,
+              importance: float = 0.5, metadata: dict[str, Any] | None = None) -> None:
         with self._lock:
             entry = MemoryEntry(
                 key=key.strip(),
@@ -112,6 +114,18 @@ class IntelligentMemoryManager:
             self._entries[entry.key] = entry
             self._save()
 
+        # Dual-write to vector store (best-effort)
+        try:
+            from memory.vector_store import vector_memory
+            meta = {"tier": tier.value, "importance": importance, **(metadata or {})}
+            vector_memory.add(
+                text=f"{key}: {content}",
+                metadata=meta,
+                doc_id=f"mem2_{key.strip()[:40]}",
+            )
+        except Exception:
+            pass
+
     def retrieve(self, key: str) -> Optional[MemoryEntry]:
         with self._lock:
             return self._entries.get(key.strip())
@@ -121,15 +135,45 @@ class IntelligentMemoryManager:
             if key.strip() in self._entries:
                 del self._entries[key.strip()]
                 self._save()
+                # Also remove from vector store
+                try:
+                    from memory.vector_store import vector_memory
+                    vector_memory.delete(f"mem2_{key.strip()[:40]}")
+                except Exception:
+                    pass
                 return True
             return False
 
     def search(self, query: str, limit: int = 5, min_score: float = 0.2) -> list[MemoryEntry]:
+        """Semantik arama (vector store) öncelikli, fallback keyword."""
+        # Try semantic search first
+        try:
+            from memory.vector_store import vector_memory
+            results = vector_memory.search(query, n=limit)
+            if results:
+                # Map back to MemoryEntry objects where possible
+                entries = []
+                for r in results:
+                    key_candidate = r.metadata.get("key", r.doc_id)
+                    if key_candidate in self._entries:
+                        entries.append(self._entries[key_candidate])
+                    else:
+                        # Create a transient entry from vector result
+                        entries.append(MemoryEntry(
+                            key=key_candidate,
+                            content=r.text,
+                            tier=MemoryTier(r.metadata.get("tier", MemoryTier.SEMANTIC_MEMORY.value)),
+                            importance=float(r.score),
+                        ))
+                return entries[:limit]
+        except Exception:
+            pass
+
+        # Fallback: keyword search on JSON entries
         with self._lock:
             q_terms = [t.lower() for t in re.findall(r"\w+", query) if len(t) > 1]
             if not q_terms:
                 return list(self._entries.values())[:limit]
-
             scored: list[tuple[float, MemoryEntry]] = []
             for entry in self._entries.values():
                 content_lower = f"{entry.key} {entry.content}".lower()
@@ -138,7 +182,6 @@ class IntelligentMemoryManager:
                 score += entry.importance * 0.2
                 if score >= min_score:
                     scored.append((score, entry))
-
             scored.sort(key=lambda x: x[0], reverse=True)
             return [e for _, e in scored[:limit]]
 
@@ -151,11 +194,20 @@ class IntelligentMemoryManager:
             if not self._entries:
                 return ""
             sorted_entries = sorted(self._entries.values(), key=lambda e: (e.importance, e.timestamp), reverse=True)[:max_entries]
-            lines = ["[ÖĞRENİLMİŞ HAFIZA & BİLGİLER]"]
+            lines = ["[ÖĞRENILMIŞ HAFIZA & BILGILER]"]
             for e in sorted_entries:
                 lines.append(f"• {e.key}: {e.content}")
             return "\n".join(lines)
 
+    def format_for_prompt_semantic(self, query: str, max_entries: int = 6) -> str:
+        """Mevcut sorguya semantik olarak en alakali hafiza kayitlarini formatlar."""
+        try:
+            from memory.vector_store import vector_memory
+            return vector_memory.format_for_prompt(query=query, max_results=max_entries)
+        except Exception:
+            return self.format_for_prompt(max_entries=max_entries)
+
 
 # Global Singleton
 intelligent_memory = IntelligentMemoryManager()
+

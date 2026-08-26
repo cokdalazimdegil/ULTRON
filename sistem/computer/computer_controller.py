@@ -67,9 +67,20 @@ class BrowserDOMProvider:
 
 
 class VisionInteractionProvider:
-    """Görsel Kutu ve Koordinat Eşleştirme Sağlayıcısı."""
+    """Görsel Kutu ve Koordinat Eşleştirme Sağlayıcısı (Gemini Grounding + OpenCV Fallback)."""
 
     def find_element_coordinates(self, query: str) -> tuple[int, int] | None:
+        # 1. Öncelik: Gemini Vision Grounding (Piksel Düzeyinde Anlamsal UI Konumlandırma)
+        try:
+            from computer.gemini_grounding import gemini_grounder
+            res = gemini_grounder.find_element(query)
+            if res.found:
+                logger.info(f"[VisionProvider] Gemini Grounding koordinat buldu: ({res.x}, {res.y}) for '{query}'")
+                return res.x, res.y
+        except Exception as e:
+            logger.debug(f"[VisionProvider] Grounding denemesi basarisiz: {e}")
+
+        # 2. Öncelik: Yerel OpenCV UI Kutu Tespiti
         ctx = screen_awareness.observe_screen()
         if ctx.ui_elements:
             # En belirgin ilk kutuyu hedefle

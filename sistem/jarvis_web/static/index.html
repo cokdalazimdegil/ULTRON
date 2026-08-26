@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#ff4422">
+  <meta name="description" content="ULTRON — Kişisel yapay zeka asistanı">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.json">
+
+  <!-- iOS PWA desteği -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ULTRON">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+
   <title>U.L.T.R.O.N</title>
   <link rel="stylesheet" href="/static/style.css">
   
@@ -14,6 +25,30 @@
         "three": "/static/lib/three/build/three.module.js",
         "three/addons/": "/static/lib/three/examples/jsm/"
       }
+    }
+  </script>
+
+  <!-- Service Worker Kaydı -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+          .then(reg => {
+            console.log('[ULTRON] Service Worker kayıtlı:', reg.scope);
+            // Yeni SW hazır olunca güncelle
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              }
+            });
+          })
+          .catch(err => console.warn('[ULTRON] SW kayıt hatası:', err));
+      });
     }
   </script>
 </head>

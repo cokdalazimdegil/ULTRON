@@ -72,10 +72,57 @@ def execute_tool(name: str, args: dict) -> str:
         if name == "save_memory":
             cat = args.get("category", "notes")
             key = args.get("key", "")
-            val = args.get("value", "")
-            if key and val:
-                update_memory({cat: {key: {"value": val}}})
+            val = args.get("value", "") or ""
+            content = args.get("content", "") or ""
+            if key:
+                update_memory({cat: {key: {"value": val or content[:200]}}})
+            # Also store to vector memory (long content support)
+            if content or val:
+                try:
+                    from memory.vector_store import vector_memory
+                    text = content if content else val
+                    vector_memory.add(
+                        text=text,
+                        metadata={"category": cat, "key": key},
+                    )
+                except Exception:
+                    pass
             return "Hafızaya kaydedildi."
+
+        if name == "search_memory":
+            query = args.get("query", "")
+            limit = int(args.get("limit", 5) or 5)
+            try:
+                from memory.vector_store import vector_memory
+                results = vector_memory.search(query, n=limit)
+                if not results:
+                    return "Hafızada bu konuyla ilgili kayıt bulunamadı."
+                lines = [f"🔍 '{query}' için hafıza sonuçları ({len(results)} kayıt):"]
+                for i, r in enumerate(results, 1):
+                    cat = r.metadata.get("category", "")
+                    key = r.metadata.get("key", "")
+                    label = f"{cat}/{key}" if cat else key or r.doc_id
+                    score_pct = round(r.score * 100)
+                    lines.append(f"{i}. [{label}] ({score_pct}% eşleşme): {r.text[:300]}")
+                return "\n".join(lines)
+            except Exception as e:
+                # Fallback to json memory
+                try:
+                    from memory.memory_manager import load_memory
+                    mem = load_memory()
+                    q_lower = query.lower()
+                    matches = []
+                    for cat, items in mem.items():
+                        if isinstance(items, dict):
+                            for k, v in items.items():
+                                val = v.get("value", str(v)) if isinstance(v, dict) else str(v)
+                                if q_lower in f"{k} {val} {cat}".lower():
+                                    matches.append(f"• {cat}/{k}: {val}")
+                    if matches:
+                        return f"🔍 '{query}' için hafıza:\n" + "\n".join(matches[:limit])
+                    return "Hafızada bu konuyla ilgili kayıt bulunamadı."
+                except Exception:
+                    return f"Hafıza araması başarısız: {e}"
 
         if name == "delete_memory":
             return delete_memory(
@@ -278,6 +325,7 @@ def execute_tool(name: str, args: dict) -> str:
             text = args.get("text", "")
             key = args.get("key", "")
             target = args.get("target", "")
+            grounding_mode = bool(args.get("grounding_mode", False))
 
             from computer.mouse_controller import move_mouse, click, double_click, right_click, scroll, drag
             from computer.keyboard_controller import type_text, press_key, hotkey, paste_text
@@ -287,6 +335,25 @@ def execute_tool(name: str, args: dict) -> str:
             safety = SafetyManager.evaluate_risk(action, target or text)
             if safety["requires_confirmation"]:
                 return safety["warning"]
+
+            # ── Grounding Mode: Gemini Vision ile koordinat tespiti ─────────
+            if grounding_mode and action in ("click", "double_click", "right_click") and target:
+                try:
+                    from computer.gemini_grounding import ground_and_click
+                    result = ground_and_click(
+                        target_description=target,
+                        double_click=(action == "double_click"),
+                    )
+                    if result["success"]:
+                        return result["message"]
+                    # Grounding başarısız — koordinata düş
+                    if x is None or y is None:
+                        return f"⚠️ Grounding başarısız: {result['message']}"
+                    # Fall through to manual coords if provided
+                except Exception as grounding_err:
+                    import traceback as _tb
+                    if x is None or y is None:
+                        return f"⚠️ Grounding hatası: {grounding_err}"
 
             if action == "click":
                 ok = click(int(x) if x is not None else None, int(y) if y is not None else None)
@@ -331,6 +398,7 @@ def execute_tool(name: str, args: dict) -> str:
                 ok = close_window(target)
                 return f"'{target}' kapatıldı." if ok else "Pencere bulunamadı."
             return f"Bilinmeyen bilgisayar kontrol eylemi: {action}"
+
 
         if name == "browser_action":
             action = args.get("action", "").lower().strip()

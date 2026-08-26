@@ -372,18 +372,37 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "save_memory",
-        "description": "Kullanıcı hakkında önemli bilgiyi kalıcı belleğe kaydeder. İsim, tercihler, projeler vb. duyunca sessizce çağır.",
+        "description": "Kullanıcı hakkında önemli bilgiyi kalıcı belleğe kaydeder. İsim, tercihler, projeler, notlar vb. duyunca sessizce çağır. 'content' ile uzun metin veya bağlam da kaydedilebilir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "category": {
                     "type": "STRING",
-                    "description": "identity | preferences | projects | notes"
+                    "description": "identity | preferences | projects | notes | episodic"
                 },
-                "key":   {"type": "STRING", "description": "Kısa anahtar (örn. 'name')"},
-                "value": {"type": "STRING", "description": "Değer (İngilizce)"}
+                "key":     {"type": "STRING", "description": "Kısa anahtar (örn. 'name', 'python_version')"},
+                "value":   {"type": "STRING", "description": "Kısa değer (İngilizce önerilir)"},
+                "content": {"type": "STRING", "description": "Uzun metin, not veya bağlam (opsiyonel — vector hafızaya kaydedilir)"}
             },
-            "required": ["category", "key", "value"]
+            "required": ["category", "key"]
+        }
+    },
+    {
+        "name": "search_memory",
+        "description": "Kalıcı hafızada semantik (anlamsal) arama yapar. Tam kelimeyi bilmeden, yakın anlamlı sorgularla da ilgili kayıtları bulur. Kullanıcı 'bunu biliyor muydun?', 'ne kaydetmiştin?', 'bunu hatırlıyor musun?' dediğinde veya geçmiş bilgiye ihtiyaç olduğunda kullan.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "Aranacak konu veya soru (doğal dil). Örn: 'Python projeleri', 'aile üyeleri', 'tercihler'"
+                },
+                "limit": {
+                    "type": "NUMBER",
+                    "description": "Döndürülecek maksimum sonuç sayısı (varsayılan: 5)"
+                }
+            },
+            "required": ["query"]
         }
     },
     {
@@ -754,7 +773,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "computer_control",
-        "description": "Masaüstünde fare, klavye, pencere ve uygulama kontrollerini gerçekleştirir (tıklama, yazma, kısayol, pencere odaklama/küçültme/kapatma).",
+        "description": "Masaüstünde fare, klavye, pencere ve uygulama kontrollerini gerçekleştirir. grounding_mode=true ile Gemini Vision ekrandaki hedef elemanı piksel düzeyinde otomatik bulur ve tıklar — koordinat bilmene gerek kalmaz.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -762,11 +781,12 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "move_mouse | click | double_click | right_click | scroll | drag | type_text | press_key | hotkey | paste_text | focus_window | minimize_window | maximize_window | close_window"
                 },
-                "x": {"type": "NUMBER", "description": "Fare X koordinatı"},
-                "y": {"type": "NUMBER", "description": "Fare Y koordinatı"},
+                "x": {"type": "NUMBER", "description": "Fare X koordinatı (grounding_mode=true ise opsiyonel)"},
+                "y": {"type": "NUMBER", "description": "Fare Y koordinatı (grounding_mode=true ise opsiyonel)"},
                 "text": {"type": "STRING", "description": "Yazılacak veya yapıştırılacak metin"},
                 "key": {"type": "STRING", "description": "Basılacak tuş veya kısayol (örn: 'enter', 'ctrl+c', 'alt+tab', 'win+r')"},
-                "target": {"type": "STRING", "description": "Hedef pencere adı veya UI öğesi"}
+                "target": {"type": "STRING", "description": "Hedef pencere adı veya UI elemanı açıklaması (örn: 'Tamam butonu', 'arama kutusu')"},
+                "grounding_mode": {"type": "BOOLEAN", "description": "true ise Gemini Vision ile ekranda hedef eleman otomatik bulunur ve tıklanır — koordinat gerekmez"}
             },
             "required": ["action"]
         }

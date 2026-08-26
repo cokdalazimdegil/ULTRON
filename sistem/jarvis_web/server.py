@@ -95,12 +95,12 @@ except Exception:
     CONFIG_PATH = WEB_DIR / "web_config.json"
 
 # Sunucuda (bulutta da çalışabilen) araçlar
-SERVER_TOOLS = {"get_weather", "save_memory", "delete_memory"}
+SERVER_TOOLS = {"get_weather", "save_memory", "delete_memory", "search_memory"}
 # Tarayıcıya yönlendirilen araçlar
 CLIENT_TOOLS = {"toggle_webcam"}
 # Geri kalan her şey → bilgisayar ajanı
 # Herkese açık modda İZİN VERİLEN araçlar (bilgisayar/hesap kontrolü hariç)
-PUBLIC_TOOLS = {"get_weather", "toggle_webcam"}
+PUBLIC_TOOLS = {"get_weather", "toggle_webcam", "save_memory", "search_memory", "delete_memory"}
 
 AGENT_TOOL_TIMEOUT = 60  # shell / takvim helper'ları yavaş olabilir
 
@@ -268,10 +268,52 @@ async def run_server_tool(name: str, args: dict) -> str:
                 return "Bellek modülü sunucuda mevcut değil."
             cat = args.get("category", "notes")
             key = args.get("key", "")
-            val = args.get("value", "")
-            if key and val:
-                update_memory({cat: {key: {"value": val}}})
-            return "ok"
+            val = args.get("value", "") or ""
+            content = args.get("content", "") or ""
+            if key:
+                update_memory({cat: {key: {"value": val or content[:200]}}})
+            if content or val:
+                try:
+                    from memory.vector_store import vector_memory
+                    text = content if content else val
+                    vector_memory.add(text=text, metadata={"category": cat, "key": key})
+                except Exception:
+                    pass
+            return "Hafızaya kaydedildi."
+
+        if name == "search_memory":
+            query = args.get("query", "")
+            limit = int(args.get("limit", 5) or 5)
+            try:
+                from memory.vector_store import vector_memory
+                results = vector_memory.search(query, n=limit)
+                if not results:
+                    return "Hafızada bu konuyla ilgili kayıt bulunamadı."
+                lines = [f"🔍 '{query}' için hafıza sonuçları ({len(results)} kayıt):"]
+                for i, r in enumerate(results, 1):
+                    cat = r.metadata.get("category", "")
+                    key = r.metadata.get("key", "")
+                    label = f"{cat}/{key}" if cat else key or r.doc_id
+                    score_pct = round(r.score * 100)
+                    lines.append(f"{i}. [{label}] ({score_pct}% eşleşme): {r.text[:300]}")
+                return "\n".join(lines)
+            except Exception as e:
+                try:
+                    from memory.memory_manager import load_memory
+                    mem = load_memory()
+                    q_lower = query.lower()
+                    matches = []
+                    for c, items in mem.items():
+                        if isinstance(items, dict):
+                            for k, v in items.items():
+                                val_s = v.get("value", str(v)) if isinstance(v, dict) else str(v)
+                                if q_lower in f"{k} {val_s} {c}".lower():
+                                    matches.append(f"• {c}/{k}: {val_s}")
+                    if matches:
+                        return f"🔍 '{query}' için hafıza:\n" + "\n".join(matches[:limit])
+                    return "Hafızada bu konuyla ilgili kayıt bulunamadı."
+                except Exception:
+                    return f"Hata: {e}"
 
         if name == "delete_memory":
             if not MEMORY_OK:
@@ -280,7 +322,7 @@ async def run_server_tool(name: str, args: dict) -> str:
                 args.get("category", ""),
                 args.get("key", ""),
                 args.get("match_text", ""),
-            )
+            ) or "Hafızadan silindi."
     except Exception as e:
         return f"Hata: {e}"
     return f"Bilinmeyen sunucu aracı: {name}"
@@ -348,13 +390,11 @@ class LiveBridge:
             except Exception:
                 pass
 
-            # IntelligentMemoryManager (memory_2) — Dinamik RAG Bağlamı
+            # IntelligentMemoryManager (memory_2) & Vector Store — Dinamik RAG Bağlamı
             try:
-                from memory.memory_2 import IntelligentMemoryManager
-                _imm = IntelligentMemoryManager()
-                goal = user_name if not is_unknown else ""
-                rag_context = _imm.format_context_for_prompt(current_goal=goal, max_tokens=600)
-                if rag_context and len(rag_context.strip()) > 30:
+                from memory.memory_2 import intelligent_memory
+                rag_context = intelligent_memory.format_for_prompt(max_entries=6)
+                if rag_context and len(rag_context.strip()) > 20:
                     parts.append(
                         "[GELİŞMİŞ UZUN SÜRELİ BELLEK — RAG]\n"
                         + rag_context
@@ -964,6 +1004,97 @@ from pathlib import Path as _Path
 import mimetypes as _mimetypes
 
 STATIC_DIR = WEB_DIR / "static"
+
+@app.get("/manifest.json")
+async def get_manifest():
+    """Serve PWA manifest from static directory."""
+    manifest_path = STATIC_DIR / "manifest.json"
+    if not manifest_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404)
+    return FileResponse(manifest_path, media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+async def get_service_worker():
+    """Serve Service Worker with Service-Worker-Allowed header."""
+    sw_path = STATIC_DIR / "sw.js"
+    if not sw_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404)
+    return FileResponse(
+        sw_path,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Service-Worker-Allowed": "/",
+        },
+    )
+
+
+# ── Web Push Notification Endpoints ─────────────────────────────────────────
+PUSH_SUBS_PATH = data_path("jarvis_web", "push_subscriptions.json")
+VAPID_CONFIG_PATH = data_path("jarvis_web", "vapid_keys.json")
+
+# Default demo VAPID public key (uncompressed P-256 EC public key in base64url)
+DEFAULT_VAPID_PUBLIC = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U"
+
+def _load_push_subs() -> list[dict]:
+    try:
+        if PUSH_SUBS_PATH.exists():
+            return json.loads(PUSH_SUBS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return []
+
+def _save_push_subs(subs: list[dict]):
+    try:
+        PUSH_SUBS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        PUSH_SUBS_PATH.write_text(json.dumps(subs, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        print(f"[Push] Kaydetme hatasi: {e}")
+
+@app.get("/api/push/vapid-public-key")
+async def get_vapid_public_key():
+    try:
+        if VAPID_CONFIG_PATH.exists():
+            cfg = json.loads(VAPID_CONFIG_PATH.read_text(encoding="utf-8"))
+            return {"public_key": cfg.get("public_key", DEFAULT_VAPID_PUBLIC)}
+    except Exception:
+        pass
+    return {"public_key": DEFAULT_VAPID_PUBLIC}
+
+@app.post("/api/push/subscribe")
+async def save_push_subscription(payload: dict):
+    endpoint = payload.get("endpoint", "")
+    if not endpoint:
+        return {"status": "error", "message": "Geçersiz subscription endpoint"}
+    subs = _load_push_subs()
+    # Filter duplicate endpoints
+    subs = [s for s in subs if s.get("endpoint") != endpoint]
+    subs.append(payload)
+    _save_push_subs(subs)
+    print(f"[Push] 📱 Yeni mobil/tarayıcı push aboneliği kaydedildi ({len(subs)} toplam)")
+    return {"status": "ok", "total_subscribers": len(subs)}
+
+@app.post("/api/push/notify")
+async def send_push_notification_api(payload: dict):
+    title = payload.get("title", "ULTRON")
+    body = payload.get("body", "Yeni bir bildirim var.")
+    url = payload.get("url", "/")
+    subs = _load_push_subs()
+    print(f"[Push] 🔔 Bildirim gönderiliyor ({len(subs)} aboneye): {title} - {body}")
+    # Forward proactive alert to all connected web bridges
+    for bridge in list(web_clients):
+        try:
+            await bridge.send_json({
+                "type": "proactive_alert",
+                "alert": {"title": title, "message": body, "url": url}
+            })
+        except Exception:
+            pass
+    return {"status": "ok", "delivered_subscribers": len(subs)}
+
 
 @app.get("/static/{path:path}")
 async def static_files(path: str):
