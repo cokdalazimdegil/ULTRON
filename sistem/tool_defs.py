@@ -656,6 +656,10 @@ TOOL_DECLARATIONS = [
                 "user": {
                     "type": "STRING",
                     "description": "Hatırlatıcının kurulduğu kişi: 'Nuri Can' veya 'Rabia'."
+                },
+                "is_task": {
+                    "type": "BOOLEAN",
+                    "description": "True ise; süre dolduğunda sadece bildirim vermek yerine 'title' alanındaki içeriği otonom bir Ajan Görevi (Deep Research, Mail Gönderme vb.) olarak arka planda çalıştırır."
                 }
             },
             "required": ["title"]
@@ -734,6 +738,28 @@ TOOL_DECLARATIONS = [
                 }
             },
             "required": ["index_or_query"]
+        }
+    },
+    {
+        "name": "send_email",
+        "description": "Belirtilen alıcıya e-posta gönderir.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "to_address": {
+                    "type": "STRING",
+                    "description": "Alıcının e-posta adresi."
+                },
+                "subject": {
+                    "type": "STRING",
+                    "description": "E-postanın konusu."
+                },
+                "body": {
+                    "type": "STRING",
+                    "description": "E-postanın metin içeriği."
+                }
+            },
+            "required": ["to_address", "subject", "body"]
         }
     },
     {

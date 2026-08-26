@@ -95,27 +95,45 @@ class ContextManager:
             world_summary = world_model.get_world_summary()
             sections.append(f"[CANLI DÜNYA & SİSTEM DURUMU]\n{world_summary}")
 
-            # 2. Aktif Görev
+            # 2. Kalıcı Kullanıcı Profili (Identity)
+            # Kimlik bilgileri her zaman bağlama eklenmeli (kullanıcının adını unutmaması için)
+            identities = intelligent_memory.retrieve(query="identity", limit=10)
+            if identities:
+                id_lines = ["[KULLANICI PROFİLİ VE TERCİHLER]"]
+                for m in identities:
+                    id_lines.append(f"• {m.key}: {m.content}")
+                sections.append("\n".join(id_lines))
+
+            # 3. Aktif Görev
             task = world_model.active_task
             if task.goal and task.status != "IDLE":
                 sections.append(f"[AKTİF OTONOM GÖREV]\nGörev: {task.goal} (Durum: {task.status})")
 
-            # 3. İlgili Hafıza
+            # 4. İlgili Hafıza (Konu Bazlı)
             if current_user_query:
-                memories = intelligent_memory.retrieve(query=current_user_query, limit=3)
-                if memories:
+                memories = intelligent_memory.retrieve(query=current_user_query, limit=4)
+                # Identity ile çakışanları çıkar
+                filtered = [m for m in memories if m.tier != MemoryTier.SEMANTIC_MEMORY or "identity" not in m.key.lower()]
+                if filtered:
                     mem_lines = ["[İLGİLİ HAFIZA BİLGİLERİ]"]
-                    for m in memories:
+                    for m in filtered:
                         mem_lines.append(f"• {m.key}: {m.content}")
                     sections.append("\n".join(mem_lines))
 
-            # 4. Son Diyalog
+            # 5. Son Diyalog
             recent = self._dialogue_history[-self.MAX_RECENT_TURNS:]
             if recent:
                 dial_lines = ["[SON KONUŞMALAR]"]
                 for t in recent:
                     dial_lines.append(f"{t.role.upper()}: {t.text}")
                 sections.append("\n".join(dial_lines))
+
+            # 6. Persona Hatırlatıcısı (Kibir Döngüsünü Kırmak İçin)
+            sections.append(
+                "[SİSTEM DİREKTİFİ]\nYanıtını verirken karakterini koru (zeki, tok, net) fakat "
+                "ASLA 'Ben ULTRON'um, şöyle yaparım' gibi tekrarlara düşme. Mümkün olduğunca doğal, "
+                "kısa ve zekice yanıt ver."
+            )
 
             full_context = "\n\n".join(sections)
             return full_context

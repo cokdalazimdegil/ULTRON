@@ -27,6 +27,33 @@ MAX_AUTOFIX_ATTEMPTS = 3
 class CodingAgent:
     """Yazılım geliştirme ve otonom hata düzeltme uzman ajanı."""
 
+    def develop_module(self, task_description: str) -> dict[str, Any]:
+        """
+        Supervisor tarafından çağrılan, kodu üretip kaydeden uçtan uca fonksiyon.
+        """
+        print(f"[Coding Agent] 🧠 Modül geliştiriliyor. Görev: {task_description[:50]}...", flush=True)
+        
+        code_content = self.generate_code_for_task(task_description)
+        
+        import re
+        import time
+        safe_name = re.sub(r'[^a-zA-Z0-9_]', '_', task_description.split()[0].strip().lower()) if task_description else "module"
+        module_name = f"auto_{safe_name}_{int(time.time())}.py"
+        
+        # workspace klasörüne kaydet
+        workspace_dir = os.path.join(os.getcwd(), "workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
+        file_path = os.path.join(workspace_dir, module_name)
+        
+        success, msg = self.write_code_file(file_path, code_content)
+        
+        return {
+            "status": "success" if success else "failed",
+            "module_name": file_path, # supervisor_2 bunu TestingAgent'a iletiyor
+            "code_content": code_content,
+            "message": msg
+        }
+
     @staticmethod
     def validate_python_syntax(code_string: str) -> tuple[bool, str]:
         """Python sözdizimini (syntax) derlemeden doğrular."""

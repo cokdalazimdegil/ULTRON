@@ -394,3 +394,59 @@ def check_new_important_emails() -> list[dict]:
 
     _save_seen_emails(seen)
     return new_important
+
+
+def send_email(to_address: str, subject: str, body: str) -> str:
+    """
+    E-posta gönderir. Windows'ta Outlook varsa onu dener, yoksa SMTP ile gönderir.
+    """
+    if not to_address or not subject:
+        return "Alıcı adresi ve konu boş olamaz."
+
+    # 1. Outlook Masaüstü (Windows) ile Göndermeyi Dene
+    if os.name == "nt":
+        try:
+            import win32com.client
+            ol = win32com.client.Dispatch("Outlook.Application")
+            msg = ol.CreateItem(0)  # olMailItem
+            msg.To = to_address
+            msg.Subject = subject
+            msg.Body = body
+            msg.Send()
+            return f"✅ E-posta Outlook üzerinden başarıyla gönderildi: {to_address}"
+        except Exception:
+            pass
+
+    # 2. SMTP ile Göndermeyi Dene
+    user, password, server, port = _get_email_credentials()
+    if not user or not password or not server:
+        return "❌ E-posta gönderilemedi: E-posta hesabı yapılandırılmamış ve Outlook bulunamadı."
+
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_server = server.replace("imap.", "smtp.")
+    smtp_port = 587
+
+    # Bazı sunucular için özel eşlemeler
+    if "outlook" in smtp_server or "office365" in smtp_server:
+        smtp_server = "smtp.office365.com"
+    elif "gmail" in smtp_server:
+        smtp_server = "smtp.gmail.com"
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = user
+        msg['To'] = to_address
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+        conn = smtplib.SMTP(smtp_server, smtp_port)
+        conn.starttls()
+        conn.login(user, password)
+        conn.send_message(msg)
+        conn.quit()
+        return f"✅ E-posta SMTP üzerinden başarıyla gönderildi: {to_address}"
+    except Exception as e:
+        return f"❌ E-posta SMTP ile gönderilirken hata oluştu: {e}"

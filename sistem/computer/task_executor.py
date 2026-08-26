@@ -118,7 +118,7 @@ class TaskEngine:
     @classmethod
     def execute_task_sync(cls, task: AutonomousTask) -> str:
         """
-        Görevi PLAN -> EXECUTE -> VERIFY -> REPORT akışıyla yürütür.
+        Görevi PLAN -> EXECUTE -> VERIFY -> REPORT (ReAct Loop) akışıyla yürütür.
         """
         task.status = "RUNNING"
         current_computer_state.set_task(task.task_id, status="RUNNING", progress="Planlanıyor ve yürütülüyor...")
@@ -131,7 +131,6 @@ class TaskEngine:
             current_computer_state.set_task(task.task_id, status="CANCELLED", progress="Acil durdurma devrede.")
             return task.completion_report
 
-        # 1. Güvenlik Denetimi
         safety_eval = SafetyManager.evaluate_risk(task.description)
         if safety_eval["requires_confirmation"]:
             task.status = "WAITING"
@@ -139,82 +138,108 @@ class TaskEngine:
             current_computer_state.set_task(task.task_id, status="WAITING_FOR_USER", progress=safety_eval["warning"])
             return safety_eval["warning"]
 
-        # 2. Planlama (Kullanıcı İsteğini Adımlara Böl)
-        desc_lower = task.description.lower().strip()
-        executed_details: list[str] = []
-        is_success = True
+        from orchestrator.gemini_reasoning import query_gemini_reasoning
+        from jarvis_web.agent import execute_tool
+        from tool_defs import TOOL_DECLARATIONS
+        import json
 
-        try:
-            # Örnek Görev 1: Araştırma
-            if any(w in desc_lower for w in ("araştır", "arastir", "bilgi topla", "incele")):
-                from computer.research_engine import execute_research_plan
-                current_computer_state.set_task(task.task_id, status="RUNNING", progress="Kaynaklar taranıyor...")
-                res_data = execute_research_plan(task.description, max_sources=3)
-                task.status = "COMPLETED"
-                task.finished_at = time.time()
-                report = f"Tamamdır {task.owner}. {res_data.get('summary', '')}"
-                task.completion_report = report
-                current_computer_state.set_task(task.task_id, status="COMPLETED", progress="Tamamlandı.")
-                return report
+        MAX_STEPS = 5
+        history = []
+        is_success = False
+        final_message = ""
+        
+        # Sadece temel bilgileri alarak token tasarrufu yapalım
+        tools_summary = [{"name": t["name"], "description": t["description"], "parameters": t.get("parameters", {})} for t in TOOL_DECLARATIONS]
+        tools_json = json.dumps(tools_summary, ensure_ascii=False, indent=2)
 
-            # Örnek Görev 2: Uygulama Açma & Doğrulama
-            if any(w in desc_lower for w in ("aç", "ac", "başlat", "calistir", "çalıştır")):
-                app_target = desc_lower.replace("aç", "").replace("ac", "").replace("lütfen", "").replace("ultron", "").strip()
-                current_computer_state.set_task(task.task_id, status="RUNNING", progress=f"'{app_target}' başlatılıyor...")
-                ok, msg = open_application(app_target)
-                if ok:
-                    executed_details.append(f"• Uygulama başlatıldı: {app_target}")
-                    # Doğrulama: Process çalışıyor mu?
-                    time.sleep(0.5)
-                    if is_app_running(app_target):
-                        executed_details.append(f"• Doğrulandı: Süreç aktif ve yanıt veriyor.")
-                    else:
-                        is_success = False
-                        executed_details.append(f"• Doğrulama Uyarısı: Süreç arka planda tespit edilemedi.")
+        for step in range(MAX_STEPS):
+            if SafetyManager.is_emergency_stopped() or task.cancel_requested:
+                final_message = "Görev iptal edildi veya acil durdurma devrede."
+                break
+                
+            task.progress_message = f"Adım {step+1}/{MAX_STEPS} yürütülüyor..."
+            current_computer_state.set_task(task.task_id, status="RUNNING", progress=task.progress_message)
+            
+            history_str = json.dumps(history, ensure_ascii=False, indent=2)
+            prompt = (
+                f"Görev: {task.description}\n\n"
+                f"Erişebileceğin araçlar:\n{tools_json}\n\n"
+                f"Geçmiş Adımlar:\n{history_str}\n\n"
+                "Sen otonom bir görev yürütücüsüsün (ReAct pattern). YALNIZCA aşağıdaki JSON formatında yanıt ver (markdown kod bloğu kullanma):\n"
+                "Araç çağırmak için:\n"
+                '{"action": "TOOL_CALL", "tool_name": "<araç_adı>", "tool_args": {"arg1": "val1"}, "thought": "<düşünce>"}\n\n'
+                "Görevi bitirmek için (başarı veya başarısızlık fark etmez):\n"
+                '{"action": "FINISH", "status": "COMPLETED" veya "FAILED", "message": "<kullanıcıya nihai rapor>", "thought": "<düşünce>"}'
+            )
+
+            try:
+                response = query_gemini_reasoning(
+                    prompt=prompt,
+                    system_instruction="Sen JSON formatında çıktı veren katı bir ReAct ajanısın. Kesinlikle sadece JSON döndür.",
+                    model_tier="pro",
+                    temperature=0.1
+                )
+                
+                # Temizle
+                cleaned = response.strip()
+                if cleaned.startswith("```json"):
+                    cleaned = cleaned[7:]
+                elif cleaned.startswith("```"):
+                    cleaned = cleaned[3:]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+                
+                step_data = json.loads(cleaned)
+                action = step_data.get("action")
+                thought = step_data.get("thought", "")
+                print(f"[Task Engine] 🧠 Düşünce: {thought}", flush=True)
+                
+                # Socket/UI yayını için adımı ekle (Broadcast)
+                if hasattr(current_computer_state, "broadcast_progress"):
+                    current_computer_state.broadcast_progress(task.task_id, thought)
+                
+                if action == "FINISH":
+                    is_success = (step_data.get("status") == "COMPLETED")
+                    final_message = step_data.get("message", "Görev tamamlandı.")
+                    history.append({"step": step, "thought": thought, "action": "FINISH", "result": final_message})
+                    break
+                elif action == "TOOL_CALL":
+                    tool_name = step_data.get("tool_name")
+                    tool_args = step_data.get("tool_args", {})
+                    print(f"[Task Engine] 🔧 Araç çağrılıyor: {tool_name}({tool_args})", flush=True)
+                    
+                    try:
+                        tool_result = execute_tool(tool_name, tool_args)
+                        history.append({"step": step, "thought": thought, "tool": tool_name, "args": tool_args, "result": tool_result})
+                    except Exception as e:
+                        err = f"Araç çalışma hatası: {str(e)}"
+                        history.append({"step": step, "thought": thought, "tool": tool_name, "error": err})
+                        print(f"[Task Engine] ⚠️ {err}", flush=True)
                 else:
-                    is_success = False
-                    executed_details.append(f"• Hata: {msg}")
+                    history.append({"step": step, "error": "Geçersiz action tipi."})
+                    
+            except Exception as e:
+                print(f"[Task Engine] ⚠️ LLM veya Parsing hatası: {e}\nYanıt: {response if 'response' in locals() else ''}", flush=True)
+                history.append({"step": step, "error": f"LLM hatası: {str(e)}"})
 
-            # Örnek Görev 3: Dosya İşlemleri & Doğrulama
-            elif any(w in desc_lower for w in ("dosya oluştur", "dosyayi olustur", "dosya yaz", "metin kaydet")):
-                from actions.file_tools import file_operations
-                # Parametre çıkarımı veya basit oluşturma
-                res = file_operations(action="write", path="scratch_task_file.txt", content="ULTRON Task File Created")
-                if os.path.exists("scratch_task_file.txt"):
-                    executed_details.append("• 'scratch_task_file.txt' oluşturuldu ve diskte varlığı doğrulandı.")
-                else:
-                    is_success = False
-                    executed_details.append("• Dosya oluşturulamadı.")
-
-            # Diğer Genel / Shell / Python Görevleri
-            else:
-                # Genel Shell veya Araç Yürütme
-                executed_details.append(f"• Görev adımları analiz edildi: '{task.description}'")
-                executed_details.append("• Sistem kontrolleri başarıyla tamamlandı.")
-
-        except Exception as e:
-            is_success = False
-            task.error_message = str(e)
-            executed_details.append(f"• Beklenmeyen Hata: {e}")
+        if not final_message:
+            final_message = "Maksimum adım sayısına ulaşıldı veya görev tamamlanamadı."
 
         task.finished_at = time.time()
 
         if is_success:
             task.status = "COMPLETED"
-            summary_body = "\n".join(executed_details)
-            final_report = f"Tamamdır {task.owner}. Hallettim:\n{summary_body}"
-            task.completion_report = final_report
+            task.completion_report = f"Tamamdır {task.owner}. {final_message}"
             current_computer_state.set_task(task.task_id, status="COMPLETED", progress="Görev başarıyla tamamlandı.")
             print(f"[Task Engine] ✅ Görev Tamamlandı: {task.task_id}", flush=True)
-            return final_report
+            return task.completion_report
         else:
             task.status = "FAILED"
-            summary_body = "\n".join(executed_details)
-            final_report = f"İşlem tamamlanamadı {task.owner}. Şurada takıldım:\n{summary_body}"
-            task.completion_report = final_report
+            task.completion_report = f"İşlem tamamlanamadı {task.owner}. Son durum: {final_message}"
             current_computer_state.set_task(task.task_id, status="FAILED", progress="Görev başarısız oldu.")
             print(f"[Task Engine] ❌ Görev Başarısız: {task.task_id}", flush=True)
-            return final_report
+            return task.completion_report
 
     @classmethod
     def run_task_in_background(cls, description: str, owner: str = "Nuri Can", on_complete: Callable[[str], None] | None = None) -> str:

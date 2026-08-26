@@ -461,7 +461,7 @@ def _open_desktop_via_scheme_win(phone_number: str, message: str) -> tuple[bool,
 
 
 def _open_desktop_by_name_win(recipient_name: str, message: str, send_now: bool) -> tuple[bool, str]:
-    """WhatsApp Desktop'ta kisi adiyla arayip mesaji yazar (best-effort)."""
+    """WhatsApp Desktop'ta kişi adıyla arayıp mesajı yazar (Görsel Zeka + Grounding ile)."""
     ok, detail = open_path("whatsapp://")
     if not ok:
         return False, f"WhatsApp Desktop acilamadi: {detail}"
@@ -471,24 +471,55 @@ def _open_desktop_by_name_win(recipient_name: str, message: str, send_now: bool)
         return False, "WhatsApp penceresi one getirilemedi"
 
     try:
-        time.sleep(0.8)
-        _copy_to_clipboard(recipient_name.strip())
-        # Ctrl+F → arama kutusu, yapistir, Enter ile ilk sonucu ac
-        _press_ctrl_win(VK_F, delay=0.5)
+        time.sleep(1.5) # Pencerenin yuklenmesini bekle
+        
+        try:
+            from computer.gemini_grounding import ground_and_click
+            import pyautogui
+        except ImportError:
+            ground_and_click = None
+
+        # 1. Arama kutusunu bul ve tikla
+        if ground_and_click:
+            res = ground_and_click("Arama kutusu (Search or start new chat)")
+            if not res.get("success"):
+                _press_ctrl_win(VK_F, delay=0.5)
+        else:
+            _press_ctrl_win(VK_F, delay=0.5)
+
+        time.sleep(0.5)
         _press_ctrl_win(VK_A, delay=0.15)
-        _press_ctrl_win(VK_V, delay=1.0)
+        _copy_to_clipboard(recipient_name.strip())
+        _press_ctrl_win(VK_V, delay=1.5) # Yapistir ve sonuclari bekle
+        
+        # Ilk sonuca tikla (Enter ile)
         _press_win(VK_RETURN, delay=1.0)
 
+        # 2. Mesaj alanini bul ve tikla
+        if ground_and_click:
+            res_msg = ground_and_click("Mesaj yazma kutusu (Type a message)")
+            if not res_msg.get("success"):
+                pass
+        
         _copy_to_clipboard(message.strip())
-        # Sohbette yarim kalmis bir taslak varsa mesaj onun SONUNA eklenirdi.
-        # Once tumunu sec ki yapistirma taslagin yerine gecsin.
+        # Sohbette yarim kalmis bir taslak varsa temizle
         _press_ctrl_win(VK_A, delay=0.15)
-        _press_ctrl_win(VK_V, delay=0.4)
+        _press_ctrl_win(VK_V, delay=0.5)
+        
         if send_now:
-            _focus_whatsapp(timeout=4.0)     # odak kaymadigindan emin ol
-            _press_win(VK_RETURN, delay=0.3)
+            _focus_whatsapp(timeout=4.0)
+            # 3. Gonder butonuna tikla (Vision ile)
+            sent_visually = False
+            if ground_and_click:
+                res_send = ground_and_click("Mesajı gönder butonu (Send icon)")
+                if res_send.get("success"):
+                    sent_visually = True
+            
+            if not sent_visually:
+                _press_win(VK_RETURN, delay=0.3)
+                
     except Exception as exc:
-        return False, f"WhatsApp Desktop otomasyonu tamamlanamadi: {exc}"
+        return False, f"WhatsApp Desktop gorsel otomasyonu tamamlanamadi: {exc}"
 
     if send_now:
         return True, f"WhatsApp Desktop uzerinden {recipient_name.strip()} kisisine mesaj gonderildi."

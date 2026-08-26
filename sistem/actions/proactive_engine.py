@@ -40,10 +40,12 @@ def set_proactive_timer(
     seconds: float = 0,
     due_iso: str = "",
     user: str = "Nuri Can",
+    is_task: bool = False,
 ) -> str:
     """
     Belirli bir süre veya tarih için proaktif hatırlatıcı/alarm kurar.
     Zamanı geldiğinde Ultron arayüze ve hoparlöre otomatik olarak seslenir.
+    Eğer is_task True ise, zamanı geldiğinde TaskEngine ile otonom görev başlatır.
     """
     if not title or not title.strip():
         return "Hata: Hatırlatıcı konusu belirtilmedi."
@@ -89,6 +91,7 @@ def set_proactive_timer(
         "due_time_str": due_time_str,
         "triggered": False,
         "notified": False,
+        "is_task": is_task,
     }
 
     timers = _load_timers()

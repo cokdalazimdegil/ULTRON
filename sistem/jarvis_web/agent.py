@@ -283,6 +283,7 @@ def execute_tool(name: str, args: dict) -> str:
                 float(args.get("seconds", 0) or 0),
                 args.get("due_iso", ""),
                 args.get("user", "Nuri Can"),
+                bool(args.get("is_task", False)),
             ) or "Hatırlatıcı ayarlandı."
 
         if name == "get_active_timers":
@@ -310,6 +311,14 @@ def execute_tool(name: str, args: dict) -> str:
                 args.get("query", ""),
                 int(args.get("limit", 5) or 5),
             ) or "Arama tamamlandı."
+
+        if name == "send_email":
+            from actions.email_manager import send_email
+            return send_email(
+                args.get("to_address", ""),
+                args.get("subject", ""),
+                args.get("body", "")
+            )
 
         if name == "screen_awareness":
             from computer.screen_analyzer import analyze_current_screen

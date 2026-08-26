@@ -115,75 +115,39 @@ def _search_duckduckgo_lite(query: str, max_results: int = 5) -> list[dict[str, 
 
 def execute_research_plan(topic: str, max_sources: int = 4, cancel_token: Any = None) -> dict[str, Any]:
     """
-    Belirtilen konu hakkında otonom çok kaynaklı araştırma yürütür.
-    PLAN -> SEARCH -> READ -> SYNTHESIZE -> REPORT
+    Belirtilen konu hakkında otonom çok kaynaklı derin araştırma (Deep Research) yürütür.
+    Bunu yapmak için ana TaskEngine ReAct döngüsünü kullanır, böylece ajan kendi kararlarını
+    vererek arama yapar, sayfalara girer ve sonuçları sentezler.
     """
     clean_topic = topic.strip()
-    print(f"[Research Mode] 🧠 Araştırma başlatıldı: '{clean_topic}'...", flush=True)
+    print(f"[Research Mode] 🧠 Otonom Derin Araştırma başlatıldı: '{clean_topic}'...", flush=True)
     current_computer_state.set_research_mode(True)
 
     if SafetyManager.is_emergency_stopped():
+        current_computer_state.set_research_mode(False)
         return {"status": "CANCELLED", "summary": "Araştırma acil durdurma nedeniyle iptal edildi."}
 
-    # 1. Canlı Web Araması
-    search_hits = _search_duckduckgo_lite(clean_topic, max_results=max_sources * 2)
-    gathered_sources: list[dict[str, Any]] = []
-    seen_urls = set()
-
-    for hit in search_hits:
-        if SafetyManager.is_emergency_stopped():
-            break
-        u = hit.get("url", "")
-        if u and u not in seen_urls and not "duckduckgo.com" in u:
-            seen_urls.add(u)
-            title = hit.get("title", "")
-            snippet = hit.get("snippet", "")
-            # Sayfa içeriğini çek (ilk birkaç kaynak için)
-            full_text = _fetch_page_clean_text(u) if len(gathered_sources) < 3 else ""
-            gathered_sources.append({
-                "title": title,
-                "url": u,
-                "snippet": snippet,
-                "content": full_text or snippet
-            })
-        if len(gathered_sources) >= max_sources:
-            break
-
-    current_computer_state.set_research_mode(False)
-
-    if not gathered_sources:
-        return {
-            "status": "COMPLETED",
-            "topic": clean_topic,
-            "sources_count": 0,
-            "summary": f"'{clean_topic}' hakkında doğrudan arama sonuçlarına ulaşılamadı. Lütfen internet bağlantınızı kontrol edin."
-        }
-
-    # 2. Bilgi Sentezi & Yapılandırılmış Rapor
-    source_reports = []
-    for idx, s in enumerate(gathered_sources, start=1):
-        title_str = s.get("title") or s["url"]
-        content_excerpt = (s.get("content") or s.get("snippet") or "")[:400].strip()
-        source_reports.append(
-            f"[{idx}] {title_str}\n"
-            f"Bağlantı: {s['url']}\n"
-            f"Özet Bilgi: {content_excerpt}"
-        )
-
-    sources_summary = "\n\n".join(source_reports)
-    final_report = (
-        f"Araştırmayı tamamladım. {len(gathered_sources)} farklı web kaynağı incelendi.\n\n"
-        f"📌 Konu: {clean_topic}\n\n"
-        f"Bulgular ve Kaynak İçerikleri:\n{sources_summary}\n\n"
-        f"Özet Değerlendirme:\n"
-        f"Elde edilen web verilerine göre '{clean_topic}' konusunda güncel makale ve sektörel analizler sentezlenmiştir."
+    from computer.task_executor import TaskEngine
+    
+    prompt = (
+        f"Şu konu hakkında derin ve otonom bir internet araştırması yap (Deep Research): '{clean_topic}'.\n"
+        f"1. 'web_search' aracını kullanarak konuyu araştır.\n"
+        f"2. Gerekirse bulduğun ilgi çekici linkleri 'fetch_webpage_content' ile oku.\n"
+        f"3. Bilgileri sentezleyerek dev, kapsamlı ve profesyonel bir rapor oluştur.\n"
+        f"Görevi 'FINISH' ile sonlandırırken message alanına hazırladığın bu detaylı raporu yaz."
     )
+    
+    task = TaskEngine.create_task(prompt, owner="ULTRON Deep Research Agent")
+    # Ajanı çalıştır (bu fonksiyon ReAct döngüsünü işletip final string dönecektir)
+    report = TaskEngine.execute_task_sync(task)
+    
+    current_computer_state.set_research_mode(False)
 
     return {
         "status": "COMPLETED",
         "topic": clean_topic,
-        "sources_count": len(gathered_sources),
-        "sources": [s["url"] for s in gathered_sources],
-        "summary": final_report
+        "sources_count": -1, # Dinamik ajan kullandığı için sayıyı saymıyoruz
+        "sources": [],
+        "summary": report
     }
 

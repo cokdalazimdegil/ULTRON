@@ -692,6 +692,14 @@ def notify_agent_status(agent_name: str, status: str, details: str = ""):
         pass
 
 
+async def broadcast_system_status(payload: dict):
+    """Genel sistem durumunu/olaylarını tüm bağlı web istemcilerine (UI) iletir."""
+    for bridge in list(web_clients):
+        try:
+            await bridge.send_json(payload)
+        except Exception:
+            pass
+
 
 # ── Cloudflare Quick Tunnel Yöneticisi ────────────────────────────────────────
 TUNNEL_URL = ""
@@ -867,8 +875,18 @@ async def _proactive_cron_worker():
             for item in due:
                 title = item.get("title", "Hatırlatıcı")
                 user = item.get("user", "Kullanıcı")
-                alert_text = f"⏰ [HATIRLATICI] {user}, sana hatırlatmamı istediğin zaman geldi: '{title}'!"
-                print(f"[Sunucu] 🚨 PROAKTİF UYARI: {alert_text}", flush=True)
+                is_task = item.get("is_task", False)
+                
+                if is_task:
+                    alert_text = f"⚙️ [OTONOM GÖREV BAŞLIYOR] Zamanlanmış görev tetiklendi: '{title}'"
+                    print(f"[Sunucu] 🚨 PROAKTİF GÖREV: {alert_text}", flush=True)
+                    # Arka planda görevi başlat
+                    from computer.task_executor import TaskEngine
+                    TaskEngine.run_task_in_background(title, owner=user)
+                else:
+                    alert_text = f"⏰ [HATIRLATICI] {user}, sana hatırlatmamı istediğin zaman geldi: '{title}'!"
+                    print(f"[Sunucu] 🚨 PROAKTİF UYARI: {alert_text}", flush=True)
+
                 for bridge in list(web_clients):
                     try:
                         await bridge.send_json({
@@ -877,7 +895,7 @@ async def _proactive_cron_worker():
                             "user": user,
                             "text": alert_text,
                         })
-                        if bridge.session:
+                        if bridge.session and not is_task:
                             try:
                                 await bridge.session.send_client_content(
                                     turns={"parts": [{"text": f"[SİSTEM HATIRLATMASI - KULLANICIYA SESLEN]: {user} için '{title}' hatırlatıcısının zamanı geldi. Kullanıcıya net, kısa ve dikkat çekici bir dille bu hatırlatmayı sesli olarak söyle."}]},

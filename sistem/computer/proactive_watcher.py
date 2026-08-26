@@ -325,6 +325,40 @@ class ProactiveWatcherEngine:
                     combined_text = active_title + "\n" + "\n".join(screen_ctx.detected_texts)
                     self.analyze_text_content(combined_text, source_app=active_proc or active_title)
 
+                # 3. Görsel (Vision) Derin Analiz - Sadece Hata/Modal Tespit Edilirse ve Cooldown Yoksa
+                if screen_ctx.has_error_box or screen_ctx.has_modal_dialog:
+                    vision_key = f"VISION_ERROR_{screen_ctx.active_window.get('title', '')}"
+                    now = time.time()
+                    if now - self._cooldowns.get(vision_key, 0.0) >= self._cooldown_period_sec * 2:
+                        self._cooldowns[vision_key] = now
+                        from actions.screen_vision import analyze_screen
+                        logger.info(f"[Proactive Watcher] 👁️ Şüpheli ekran aktivitesi ({vision_key}), Vision modeline gönderiliyor...")
+                        prompt = (
+                            "Ekranda bir hata penceresi veya uyarı modalı tespit ettim. "
+                            "Eğer ekranda gerçekten bir hata, kilitlenme, uyarı, veya "
+                            "çözülmesi gereken bir sorun varsa kısaca 1-2 cümleyle ne olduğunu yaz. "
+                            "Eğer tamamen normal veya rutin bir pencereyse SADECE 'YOK' yaz."
+                        )
+                        try:
+                            vision_res = analyze_screen(query=prompt, target="active_window")
+                            if vision_res and "YOK" not in vision_res.upper() and len(vision_res) > 8:
+                                alert = ProactiveAlert(
+                                    alert_id=f"ALERT-{uuid.uuid4().hex[:8].upper()}",
+                                    timestamp=time.time(),
+                                    category=AlertCategory.CODE_ERROR,
+                                    severity=AlertSeverity.HIGH,
+                                    title="Otonom Görsel Tespit (Vision)",
+                                    message=vision_res,
+                                    suggested_action="Düzeltmek için bana sor veya otonom aksiyon başlat.",
+                                    auto_executable=False,
+                                    target_app=screen_ctx.active_window.get("process", "")
+                                )
+                                with self._lock:
+                                    self._alerts.append(alert)
+                                self._broadcast_alert(alert)
+                        except Exception as e:
+                            logger.debug(f"[Proactive Watcher] Vision analizi hatası: {e}")
+
             except Exception as e:
                 logger.debug(f"[Proactive Watcher] Döngü adımı hatası: {e}")
 

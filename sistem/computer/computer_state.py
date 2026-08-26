@@ -138,6 +138,36 @@ class ComputerStateManager:
     def get_summary(self) -> str:
         return world_model.get_world_summary()
 
+    def broadcast_progress(self, task_id: str, message: str) -> None:
+        """
+        WebSocket üzerinden TASK_STEP_PROGRESS (canlı görev ilerlemesi) yayınlar.
+        UI/mobil uygulamalar bu mesajları alıp otonom görevlerin adım adım ne yaptığını görür.
+        """
+        self.set_task(task_id, status=self._state.current_task_status, progress=message)
+        try:
+            from jarvis_web.server import broadcast_system_status
+            import asyncio
+            
+            async def do_broadcast():
+                await broadcast_system_status({"type": "TASK_STEP_PROGRESS", "task_id": task_id, "message": message})
+            
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(do_broadcast())
+                else:
+                    asyncio.run(do_broadcast())
+            except RuntimeError:
+                # Event loop yoksa yeni bir tane oluştur
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(do_broadcast())
+                loop.close()
+        except ImportError:
+            pass
+        except Exception as e:
+            print(f"[ComputerState] ⚠️ İlerleme yayınlama hatası: {e}")
+
 
 # Global Singleton Instance (Backward-Compatible)
 current_computer_state = ComputerStateManager()
