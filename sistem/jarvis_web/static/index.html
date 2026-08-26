@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <title>U.L.T.R.O.N</title>
+  <link rel="stylesheet" href="/static/style.css">
+  
+  <script src="/static/lib/qrcode.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/static/lib/three/build/three.module.js",
+        "three/addons/": "/static/lib/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      var log = document.getElementById('log');
+      if (log) {
+        log.innerHTML += '<div style="color:red; background:black; padding:5px; margin:2px; font-family:monospace; z-index:9999; position:relative;">ERROR: ' + msg + '<br>Line: ' + lineNo + '</div>';
+      }
+      return false;
+    };
+  </script>
+  <div class="hud-vignette"></div>
+  <div class="hud-grain"></div>
+  <div class="hud-scanlines"></div>
+
+  <div id="orb-container"></div>
+
+  <!-- HUD Top Left -->
+  <div id="hud-top-left">
+    <div class="brand">U.L.T.R.O.N <span class="sub">GLOBAL CORE</span></div>
+    <div class="status-row">
+      <div id="status" class="status-indicator">STANDBY</div>
+      <div id="speaker-chip" class="speaker-chip hidden">🎙️ SES: NURİ CAN</div>
+    </div>
+    <!-- Satellite Agent Orbs Floating HUD Bar -->
+    <div id="active-agents-bar" class="active-agents-bar"></div>
+  </div>
+
+  <!-- HUD Top Right -->
+  <div id="hud-top-right">
+    <div class="top-actions">
+      <!-- Voice Profile Studio Button -->
+      <button id="btn-voice-modal" class="btn-hud-action" title="Biyometrik Ses Profili Stüdyosu">
+        🎙️ SES STÜDYOSU
+      </button>
+      <!-- QR Code Mobile Connect Button -->
+      <button id="btn-qr-modal" class="btn-hud-action" title="Telefondan Bağlan (QR Kod Aç)">
+        📱 QR BAĞLANTI
+      </button>
+      <!-- Fullscreen Toggle Button -->
+      <button id="btn-fullscreen" class="btn-hud-action" title="Tam Ekran Modunu Aç / Kapat (F11)">
+        ⛶ TAM EKRAN
+      </button>
+      <!-- Kullanıcı Kimlik Toggle (V18 — Oturum Bazlı) -->
+      <div class="user-identity-toggle" title="Aktif kullanıcıyı manuel seç veya otomatik tespiti yenile" style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--cyan,#00f5ff);border-radius:6px;padding:2px 6px;background:rgba(0,245,255,0.05);">
+        <span id="identity-lock-icon" style="font-size:13px;cursor:default;" title="🔒 Manuel seçili | 🔓 Otomatik tespit aktif">🔓</span>
+        <button onclick="selectUser('Nuri Can')" title="Nuri Can olarak giriş yap" style="background:none;border:none;color:var(--cyan,#00f5ff);cursor:pointer;font-size:11px;font-family:inherit;padding:1px 4px;letter-spacing:0.5px;">NURİ CAN</button>
+        <span style="color:#555;">|</span>
+        <button onclick="selectUser('Rabia')" title="Rabia olarak giriş yap" style="background:none;border:none;color:#ff9ef7;cursor:pointer;font-size:11px;font-family:inherit;padding:1px 4px;letter-spacing:0.5px;">RABİA</button>
+        <span style="color:#555;">|</span>
+        <button onclick="requestReIdentify()" title="Kimliği sıfırla — otomatik ses tespiti yeniden başlasın" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:11px;font-family:inherit;padding:1px 4px;">🔄</button>
+      </div>
+    </div>
+
+
+    <div class="badges">
+      <span id="badge-gps"    class="badge off">GPS: ACQUIRING</span>
+      <span id="badge-server" class="badge off">SRV: OFF</span>
+      <span id="badge-agent"  class="badge off">UPLINK: OFF</span>
+    </div>
+  </div>
+
+  <!-- Picture-in-Picture Camera (Far Top-Right Corner) -->
+  <div id="cam-wrap" class="hidden">
+    <video id="cam" autoplay playsinline muted></video>
+    <canvas id="hand-canvas" width="640" height="480"></canvas>
+    <span class="cam-live">● CAM LIVE</span>
+  </div>
+
+  <!-- Collapsible Chat Center Window -->
+  <div id="hud-center">
+    <div id="log-container" class="collapsed">
+      <div class="log-header">
+        <div class="log-title">⚡ NEURAL INTERFACE // CONSOLE</div>
+        <button id="btn-close-log" class="log-header-btn" title="Kapat">✕</button>
+      </div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Subtitle when Chat is collapsed -->
+  <div id="hud-toast" class="hud-toast hidden"></div>
+
+  <!-- Main Bottom Controls -->
+  <div id="hud-bottom">
+    <div class="main-controls">
+      <button id="btn-mic" class="ctl">🎙 MIC</button>
+      <button id="btn-toggle-log" class="ctl" title="Sohbet Terminalini Aç/Kapat">💬 CHAT</button>
+      <form id="text-form">
+        <input id="text-input" type="text" placeholder="Awaiting manual input..." autocomplete="off">
+        <button type="submit">SEND</button>
+      </form>
+      <button id="btn-cam" class="ctl">📷 CAM</button>
+    </div>
+    <div id="build-stamp"></div>
+  </div>
+
+  <!-- Voice Profile Studio Modal -->
+  <div id="voice-modal" class="modal-overlay hidden">
+    <div class="modal-card voice-card-wide">
+      <div class="modal-header">
+        <div class="modal-title">🎙️ BİYOMETRİK SES STÜDYOSU // NEURAL PROFILES</div>
+        <button id="btn-close-voice" class="modal-close-btn" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="voice-section-title">KAYITLI BİYOMETRİK SES PROFİLLERİ</div>
+        <div id="voice-profiles-list" class="voice-profiles-grid">
+          <div class="voice-loading">Yükleniyor...</div>
+        </div>
+
+        <div class="voice-divider"></div>
+
+        <div class="voice-section-title">✨ SES PROFİLİ KAYDET / GÜNCELLE (4 Saniye)</div>
+        <div class="voice-enroll-box">
+          <div class="voice-form-row">
+            <input id="voice-name-input" type="text" placeholder="Kişi Adı / İsim (örn: Nuri Can, Rabia, Mehmet...)">
+            <input id="voice-role-input" type="text" placeholder="Rol / Açıklama (örn: Yönetici, Aile Üyesi, Misafir...)">
+          </div>
+
+          <!-- Live Audio Visualizer Canvas -->
+          <div class="voice-visualizer-wrap">
+            <canvas id="voice-visualizer-canvas" width="600" height="70"></canvas>
+            <div id="voice-vu-level" class="voice-vu-level">● SİNYAL: BEKLİYOR</div>
+          </div>
+
+          <div class="voice-record-controls">
+            <button id="btn-start-enroll-record" class="btn-voice-action">🔴 4 SANİYELİK KAYDI BAŞLAT</button>
+            <button id="btn-test-voice-recognition" class="btn-voice-secondary">🧪 SESİMİ TEST ET (3s)</button>
+            <button id="btn-wipe-all-profiles" class="btn-voice-danger">🗑️ Tümünü Sıfırla</button>
+          </div>
+
+          <div id="voice-meter-wrap" class="voice-meter-wrap hidden">
+            <div id="voice-meter-bar" class="voice-meter-bar"></div>
+            <div id="voice-countdown-text" class="voice-countdown-text">4...</div>
+          </div>
+
+          <div id="voice-feedback-msg" class="voice-feedback-msg">
+            Mikrofona 4 saniye boyunca normal konuşma cümlenizi söyleyin. Sistem CAM++ 512-D akustik gömmesini ve F0 Pitch frekansınızı kaydedecektir.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Connection Modal -->
+  <div id="qr-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">📱 TELEFONDAN BAĞLAN // UPLINK</div>
+        <button id="btn-close-qr" class="modal-close-btn" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="qr-tabs">
+          <button id="tab-qr-cloud" class="qr-tab active">🌐 İNTERNET SİTESİ</button>
+          <button id="tab-qr-lan" class="qr-tab">🏠 YEREL WI-FI</button>
+        </div>
+
+        <div class="qr-box-wrap">
+          <div id="qr-code-box"></div>
+        </div>
+
+        <div id="qr-status-msg" class="qr-info-text">
+          Telefonunuzun kamerasıyla bu QR kodu okutarak Ultron'a anında bağlanabilir, mikrofon ve kamera ile konuşabilirsiniz.
+        </div>
+
+        <div class="qr-link-box">
+          <input id="qr-url-input" type="text" readonly spellcheck="false">
+          <button id="btn-copy-qr-url" title="Adresi Kopyala">KOPYALA</button>
+        </div>
+
+        <div class="qr-hints">
+          <div id="qr-hint-text">🌐 Cloudflare tüneliyle SSL sertifikası doğrudan geçerlidir. Her yerden bağlanabilirsiniz.</div>
+          <button id="btn-firewall-permission" class="btn-firewall" title="Windows Güvenlik Duvarı Kuralı Ekle">🛡️ Güvenlik Duvarı İzni Ver</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Public key screen -->
+  <div id="key-screen" class="hidden">
+    <div class="key-box">
+      <div class="key-title">⚡ U.L.T.R.O.N CORE</div>
+      <div class="key-sub">INITIALIZATION REQUIRED: ENTER GEMINI API KEY</div>
+      <input id="key-input" type="password" placeholder="API Key" autocomplete="off" spellcheck="false">
+      <button id="key-save">INITIALIZE</button>
+      <a class="key-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Acquire Key ↗</a>
+      <div class="key-note">Local storage only. No transmission to external servers.</div>
+    </div>
+  </div>
+
+  <!-- ╔════════════════════════════════════════════════════════════╗ -->
+  <!-- ║  İNTERAKTİF RAPOR GÖRÜNTÜLEYİCİ MODALI  — V19         ║ -->
+  <!-- ╚════════════════════════════════════════════════════════════╝ -->
+  <div id="report-modal" class="modal-overlay hidden">
+    <div class="modal-card report-card-wide">
+      <div class="modal-header">
+        <div class="modal-title" id="report-modal-title">📋 RAPOR GÖRÜNTÜLEYİCİ</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="btn-download-report" class="btn-hud-action" title="Raporu İndir (.md)">⬇ İNDİR</button>
+          <button id="btn-close-report" class="modal-close-btn" title="Kapat">✕</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="report-modal-meta" style="font-size:11px;color:#888;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,245,255,0.15);"></div>
+        <div id="report-modal-content" class="report-viewer-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rapor Tamamlanma Bildirimi (Floating Banner) -->
+  <div id="report-notification" class="report-notification hidden">
+    <span id="report-notif-icon">📋</span>
+    <span id="report-notif-text">Araştırma raporu hazır!</span>
+    <button id="btn-open-report-notif" onclick="openReportFromNotification()">📂 Görüntüle</button>
+    <button onclick="document.getElementById('report-notification').classList.add('hidden')" style="background:none;border:none;color:#888;cursor:pointer;font-size:14px;padding:2px 6px;">✕</button>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

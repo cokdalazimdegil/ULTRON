@@ -1,0 +1,36 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.claude/
+.swift-cache/
+.swift-home/
+
+# Kisisel veriler — ASLA paylasilmaz
+config/api_keys.json
+memory/memory.json
+memory/phone_book.json
+memory/calendar_store.json
+memory/jarvis_calendar.ics
+
+jarvis.log
+jarvis_error.log
+jarvis_tani.log
+
+# Web/telefon surumu — uretilen kisisel artefaktlar
+jarvis_web/web_config.json
+jarvis_web/certs/
+
+# PyInstaller ciktilari (jarvis.spec PAYLASILIR, ciktilari paylasilmaz)
+build/
+dist/
+*.manifest
+
+# Uretilen ikon
+Icon/JARVIS.ico
+
+# cloudflared ikilisi (51 MB) — depoya konmaz, build_exe.ps1 indirir.
+# CLOUDFLARED_LICENSE.txt PAYLASILIR (Apache-2.0 atif sarti).
+cloudflared.exe

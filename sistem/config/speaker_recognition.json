@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "engine": "CAM++ 512-D + Prototype Bank",
+  "thresholds": {
+    "absolute_match_threshold": 0.40,
+    "top1_top2_margin_threshold": 0.08,
+    "speaker_switch_margin": 0.06,
+    "session_continue_threshold": 0.38,
+    "uncertain_lower_threshold": 0.25,
+    "adaptation_threshold": 0.60
+  },
+  "audio_quality_gate": {
+    "min_voiced_duration_sec": 0.50,
+    "min_rms_energy": 0.007,
+    "min_snr_db": 6.0,
+    "max_clipping_ratio": 0.025,
+    "target_rms_level": 0.05
+  },
+  "prototype_bank": {
+    "top_k_prototypes": 3,
+    "centroid_weight": 0.40,
+    "top_k_weight": 0.60,
+    "max_prototypes_per_profile": 12,
+    "min_prototype_duration_sec": 0.80
+  },
+  "temporal_aggregation": {
+    "window_size": 4,
+    "decay_factor": 0.85,
+    "required_consecutive_frames": 3
+  }
+}

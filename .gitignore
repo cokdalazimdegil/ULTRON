@@ -1,0 +1,84 @@
+﻿# Python virtual environments
+.venv/
+venv/
+sistem/.venv/
+sistem/venv/
+
+# Bytecode & Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Web artifacts
+node_modules/
+.next/
+dist/
+build/
+*.manifest
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+.gemini/
+.swift-cache/
+.swift-home/
+
+# Personal credentials & secrets (ASLA PAYLASILMAZ)
+config/api_keys.json
+sistem/config/api_keys.json
+*.env
+*.pem
+*.key
+
+# Personal memory, contacts & data
+memory/memory.json
+memory/memory_v2.json
+memory/phone_book.json
+memory/calendar_store.json
+memory/jarvis_calendar.ics
+memory/user_locations.json
+memory/seen_emails.json
+memory/speaker_profiles.json
+memory/voice_profiles.json
+memory/active_timers.json
+memory/learned_stylometry.json
+sistem/memory/memory.json
+sistem/memory/memory_v2.json
+sistem/memory/phone_book.json
+sistem/memory/calendar_store.json
+sistem/memory/jarvis_calendar.ics
+sistem/memory/user_locations.json
+sistem/memory/seen_emails.json
+sistem/memory/speaker_profiles.json
+sistem/memory/voice_profiles.json
+sistem/memory/active_timers.json
+sistem/memory/learned_stylometry.json
+
+# Web personal artifacts & certs
+jarvis_web/web_config.json
+jarvis_web/certs/
+sistem/jarvis_web/web_config.json
+sistem/jarvis_web/certs/
+
+# Logs & Archives
+*.log
+*.zip
+*.tar.gz
+*.7z
+task_checkpoints/
+sistem/task_checkpoints/
+snapshots/
+sistem/snapshots/
+
+# Binaries downloaded on setup
+cloudflared.exe
+sistem/cloudflared.exe

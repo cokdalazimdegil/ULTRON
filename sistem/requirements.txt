@@ -1,0 +1,34 @@
+# ULTRON — Full System Requirements (macOS + Windows)
+# ─────────────────────────────────────────────────────────────
+
+# ── Core AI & LLM ────────────────────────────────────────────
+google-genai>=1.0.0
+
+# ── Voice Biometrics & Audio ─────────────────────────────────
+onnxruntime>=1.18.0
+scipy>=1.12.0
+numpy>=1.26.0
+SpeechRecognition>=3.10.0
+pyaudio>=0.2.14
+
+# ── Computer Vision & Screen Awareness ───────────────────────
+opencv-python>=4.9.0
+Pillow>=10.0.0
+
+# ── Web, Streaming & Networking ──────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+websockets>=12.0
+requests>=2.31.0
+cryptography>=42.0.0
+qrcode>=7.4.0
+
+# ── System Automation & Desktop UI ───────────────────────────
+psutil>=5.9.0
+pywebview[cef]>=5.0.0
+
+# ── Windows Platform Specific ────────────────────────────────
+pywin32>=306; sys_platform == "win32"
+mss>=9.0.0; sys_platform == "win32"
+pyttsx3>=2.90; sys_platform == "win32"
+pywinauto>=0.6.8; sys_platform == "win32"
