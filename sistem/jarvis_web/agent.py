@@ -49,7 +49,6 @@ from actions.web_tools import fetch_webpage_content
 from actions.proactive_engine import set_proactive_timer, get_active_timers, cancel_timer
 from actions.location_tracker import get_user_location
 from actions.email_manager import get_unread_emails, read_email_detail, search_emails
-from actions.voice_recognition import get_voice_recognition_status, remove_voice_profile, list_voice_profiles
 from actions.youtube_stats import get_youtube_channel_report
 from actions.research_engine import handle_web_search, handle_deep_research
 from memory.memory_manager import update_memory, delete_memory
@@ -264,23 +263,6 @@ def execute_tool(name: str, args: dict) -> str:
                 args.get("query", ""),
                 int(args.get("limit", 5) or 5),
             ) or "Arama tamamlandı."
-
-        if name == "get_voice_recognition_status":
-            return get_voice_recognition_status() or "Ses profili durumu alındı."
-
-        if name == "enroll_voice_profile":
-            speaker = args.get("speaker_name", "").strip()
-            role = args.get("role", "").strip()
-            if not speaker:
-                return "Kaydedilecek konuşmacı adı belirtilmedi."
-            from actions.voice_recognition import enroll_voice_profile
-            return enroll_voice_profile(speaker, role=role)
-
-        if name == "remove_voice_profile":
-            speaker = args.get("speaker_name", "").strip()
-            if not speaker:
-                return "Silinecek konuşmacı adı belirtilmedi."
-            return remove_voice_profile(speaker)
 
         if name == "screen_awareness":
             from computer.screen_analyzer import analyze_current_screen

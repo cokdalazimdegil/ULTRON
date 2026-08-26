@@ -306,75 +306,7 @@ class LiveBridge:
         self.ws = ws
         self.session = None
         self.requested_voice = voice
-        self.current_user = user if user and user.lower() not in {"bilinmeyen", "unknown"} else "Nuri Can"
-
-        # Oturum bazlı kimlik durumu
-        self._identity_locked: bool = False          # True olunca sürekli kontrol durur
-        self._identity_warmup_buf = bytearray()      # İlk kimlik tespiti için tampon
-        self._last_speech_time: float = time.monotonic()  # Son ses aktivitesi zamanı
-
-        self._last_spoken_text = ""
-        self._voice_buffer = bytearray()             # Canlı kayıt tamponu (update_live_audio_buffer için)
-        try:
-            from actions.voice_recognition import SpeakerSessionTracker
-            self.speaker_tracker = SpeakerSessionTracker(initial_user=self.current_user)
-        except Exception:
-            self.speaker_tracker = None
-
-    async def _recognize_voice_async(self, pcm_bytes: bytes, is_refresh: bool = False):
-        """Kimlik tespiti — yalnızca oturum başında (warm-up) veya yenileme tetiklendiğinde çağrılır."""
-        try:
-            loop = asyncio.get_event_loop()
-            from core.multimodal_auth import multimodal_auth_engine
-            decision = await loop.run_in_executor(
-                None, lambda: multimodal_auth_engine.evaluate_identity(
-                    pcm_audio=pcm_bytes,
-                    spoken_text=self._last_spoken_text
-                )
-            )
-
-            speaker = decision.user_name
-            state = decision.status.value
-
-            if state == "VERIFIED" and speaker != "Bilinmeyen":
-                prev = self.current_user
-                self.current_user = speaker
-                if self.speaker_tracker:
-                    self.speaker_tracker.set_active_user(speaker)
-                tag = "🔄 Kimlik Yenilendi" if is_refresh else "🛡️ Oturum Kimliği Belirlendi"
-                print(f"[Sunucu] {tag}: {self.current_user} "
-                      f"(Füzyon: {decision.fused_score:.2f}, Ses: {decision.voice_score:.2f})", flush=True)
-            elif state == "UNKNOWN" and is_refresh:
-                # Sadece yenileme sırasında bilinmeyen çıkarsa mevcut kimliği koru
-                print(f"[Sunucu] ⚠️ Yenileme: yabancı ses, mevcut kimlik korundu ({self.current_user})")
-
-            # UI'ya bildir
-            await self.send_json({
-                "type": "speaker_identified",
-                "user": self.current_user,
-                "state": state,
-                "similarity": decision.fused_score,
-                "fused_score": decision.fused_score,
-                "voice_score": decision.voice_score,
-                "style_score": decision.style_score,
-                "visual_score": decision.visual_score,
-                "margin": decision.margin,
-                "verified_factors": decision.verified_factors,
-                "verification_status": state,
-                "session_locked": self._identity_locked,
-            })
-            # İlk kimlik tespiti sonrasında kilitle
-            if not is_refresh:
-                self._identity_locked = True
-        except Exception as e:
-            logger.debug(f"Kimlik doğrulama hatası: {e}")
-            if not is_refresh:
-                self._identity_locked = True  # Hata durumunda da kilitle, varsayılan kullanıcıyla devam et
-
-    def _should_refresh_identity(self) -> bool:
-        """15 dakika sessizlik sonrası yenileme gerekiyor mu?"""
-        elapsed_min = (time.monotonic() - self._last_speech_time) / 60.0
-        return elapsed_min >= self._IDENTITY_REFRESH_MINUTES
+        self.current_user = "Nuri Can"
 
 
     def _build_config(self) -> types.LiveConnectConfig:
@@ -382,30 +314,11 @@ class LiveBridge:
             f"[ŞU ANKİ ZAMAN]\n{datetime.datetime.now().strftime('%A, %d %B %Y — %H:%M')}\n\n"
         ]
         
-        # Dinamik Kullanıcı Kimliği ve Hitap (Biyometrik Ses Ayrımı)
-        user_name = self.current_user or "Nuri Can"
-        is_unknown = user_name.lower() in {"bilinmeyen", "unknown"}
-        is_rabia = "rabia" in user_name.lower()
-        is_nuri = "nuri" in user_name.lower() or not is_unknown and not is_rabia
-        
-        user_context = f"[KULLANICI KİMLİĞİ VE İLETİŞİM PROTOKOLÜ]\n"
-        if is_unknown:
-            user_context += (
-                "⚠️ Şu anda konuşan kişinin biyometrik sesi henüz eşleştirilmedi.\n"
-                "- Genel bilgi ve asistanlık görevlerini nazikçe yerine getir.\n"
-                "- Kritik terminal veya sistem ayarlarını çalıştırmadan önce kimlik doğrulaması iste.\n"
-            )
-        elif is_rabia:
-            user_context += (
-                f"- Yetkili Kullanıcı: **Rabia** (Nuri Can'ın sevgili eşi).\n"
-                "- Kendisine 'Rabia Hanım' veya nazik ve saygılı şekilde 'Rabia' diye hitap et. "
-                "Son derece kibar, koruyucu ve yardımsever ol; tüm isteklerini eksiksiz yerine getir.\n"
-            )
-        else:
-            user_context += (
-                f"- Yetkili Kullanıcı ve Yaratıcı: **Nuri Can**.\n"
-                "- Nuri Can senin yaratıcın ve sistem yöneticindir. Ona doğrudan, saygılı, net ve yüksek zekaya sahip Ultron tarzıyla hitap et ve tüm isteklerini kesintisiz yerine getir.\n"
-            )
+        user_context = (
+            "[KULLANICI KİMLİĞİ VE İLETİŞİM PROTOKOLÜ]\n"
+            "- Yetkili Kullanıcı ve Yaratıcı: **Nuri Can**.\n"
+            "- Nuri Can senin yaratıcın ve sistem yöneticindir. Ona doğrudan, saygılı, net ve yüksek zekaya sahip Ultron tarzıyla hitap et ve tüm isteklerini kesintisiz yerine getir.\n"
+        )
 
 
         # Canlı Konum Bilgisi
@@ -563,37 +476,9 @@ class LiveBridge:
                         await self.session.send_realtime_input(
                             audio=types.Blob(data=payload,
                                              mime_type="audio/pcm;rate=16000"))
-                    # Canlı kayıt tamponu (yalnızca ses profili güncelleme için)
-                    try:
-                        from actions.voice_recognition import update_live_audio_buffer
-                        update_live_audio_buffer(payload)
-                        self._last_speech_time = time.monotonic()  # Ses aktivitesi zamanını güncelle
-
-                        # ──── Oturum Başı Kimlik Tespiti (Warm-up) ────
-                        # Kimlik henüz kilitlenmemişse ses topla ve bir kez doğrula
-                        if not self._identity_locked:
-                            self._identity_warmup_buf.extend(payload)
-                            if len(self._identity_warmup_buf) >= self._IDENTITY_WARMUP_BYTES:
-                                raw_pcm = bytes(self._identity_warmup_buf)
-                                self._identity_warmup_buf = bytearray()  # tamponu temizle
-                                asyncio.create_task(self._recognize_voice_async(raw_pcm, is_refresh=False))
-
-                        # ──── 15 Dakika Sessizlik Sonrası Yenileme ────
-                        elif self._should_refresh_identity():
-                            self._identity_locked = False  # kilit aç, yeniden warm-up başlat
-                            self._identity_warmup_buf = bytearray()
-                            print("[Sunucu] 🔄 15 dk sessizlik: kimlik yenileme başlatıldı", flush=True)
-
-                    except Exception:
-                        pass
                 elif kind == 0x02:  # kamera JPEG karesi
                     await self.session.send_realtime_input(
                         media={"data": payload, "mime_type": "image/jpeg"})
-                    try:
-                        from actions.visual_biometrics import visual_biometrics
-                        visual_biometrics.process_camera_frame(payload, active_hint_user=self.current_user)
-                    except Exception:
-                        pass
                 continue
 
             text = msg.get("text")
@@ -602,31 +487,6 @@ class LiveBridge:
             try:
                 obj = json.loads(text)
             except Exception:
-                continue
-            if obj.get("type") == "identify":
-                user = obj.get("user", "")
-                if user:
-                    self.current_user = user
-                    self._identity_locked = True  # Manuel seçim → kilitle
-                    self._identity_warmup_buf = bytearray()
-                    if self.speaker_tracker:
-                        self.speaker_tracker.set_active_user(user)
-                    try:
-                        from core.multimodal_auth import multimodal_auth_engine
-                        multimodal_auth_engine.set_active_user(user)
-                    except Exception:
-                        pass
-                    print(f"[Sunucu] 👤 Manuel kullanıcı seçildi: {user} (oturum kilitlendi)")
-                    await self.send_json({"type": "speaker_identified", "user": user, "state": "MANUAL",
-                                          "session_locked": True})
-                continue
-
-            if obj.get("type") == "re_identify":
-                # Kullanıcı beni tanı / kim konuşuyor derse kimlik kilidini aç ve yeniden warm-up başlat
-                self._identity_locked = False
-                self._identity_warmup_buf = bytearray()
-                print("[Sunucu] 🔄 Kimlik yenileme isteği alındı")
-                await self.send_json({"type": "status", "msg": "Kimlik yenileme başlatıldı, konuşmaya devam edin..."})
                 continue
 
             if obj.get("type") == "location":
@@ -637,10 +497,8 @@ class LiveBridge:
                 if lat is not None and lng is not None:
                     try:
                         from actions.location_tracker import update_user_location
-                        active_u = self.speaker_tracker.active_user if self.speaker_tracker else self.current_user
-                        loc_user = active_u if active_u and active_u != "Bilinmeyen" else "Nuri Can"
-                        update_user_location(loc_user, float(lat), float(lng), float(acc) if acc else None)
-                        print(f"[Sunucu] 📍 Konum güncellendi: {loc_user} -> {lat:.4f}, {lng:.4f}")
+                        update_user_location("Nuri Can", float(lat), float(lng), float(acc) if acc else None)
+                        print(f"[Sunucu] 📍 Konum güncellendi: Nuri Can -> {lat:.4f}, {lng:.4f}")
                     except Exception as err:
                         print(f"[Sunucu] Konum kayıt hatası: {err}")
                 continue
@@ -662,26 +520,6 @@ class LiveBridge:
             if obj.get("type") == "text" and obj.get("text", "").strip():
                 spoken_cmd = obj["text"].strip()
                 self._last_spoken_text = spoken_cmd
-                try:
-                    from core.multimodal_auth import multimodal_auth_engine
-                    decision = multimodal_auth_engine.evaluate_identity(spoken_text=spoken_cmd)
-                    if decision.status.value == "VERIFIED" and decision.user_name != "Bilinmeyen":
-                        if decision.user_name != self.current_user:
-                            self.current_user = decision.user_name
-                            await self.send_json({
-                                "type": "speaker_identified",
-                                "user": self.current_user,
-                                "state": "STABLE",
-                                "similarity": decision.fused_score,
-                                "voice_score": decision.voice_score,
-                                "style_score": decision.style_score,
-                                "visual_score": decision.visual_score,
-                                "margin": decision.margin,
-                                "verified_factors": decision.verified_factors,
-                            })
-                except Exception:
-                    pass
-
                 await self.session.send_client_content(
                     turns={"parts": [{"text": spoken_cmd}]},
                     turn_complete=True,
@@ -713,25 +551,6 @@ class LiveBridge:
                             self._last_spoken_text = full_in
                             await self.send_json({"type": "log",
                                                   "who": "user", "text": full_in})
-                            try:
-                                from core.multimodal_auth import multimodal_auth_engine
-                                decision = multimodal_auth_engine.evaluate_identity(spoken_text=full_in)
-                                if decision.status.value == "VERIFIED" and decision.user_name != "Bilinmeyen":
-                                    if decision.user_name != self.current_user:
-                                        self.current_user = decision.user_name
-                                        await self.send_json({
-                                            "type": "speaker_identified",
-                                            "user": self.current_user,
-                                            "state": "STABLE",
-                                            "similarity": decision.fused_score,
-                                            "voice_score": decision.voice_score,
-                                            "style_score": decision.style_score,
-                                            "visual_score": decision.visual_score,
-                                            "margin": decision.margin,
-                                            "verified_factors": decision.verified_factors,
-                                        })
-                            except Exception:
-                                pass
 
                         in_buf = []
                         full_out = " ".join(t for t in out_buf if t).strip()
@@ -1159,88 +978,6 @@ async def static_files(path: str):
         media_type=mime or "application/octet-stream",
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
-
-
-# ── Biyometrik Ses Stüdyosu REST API Endpointleri ──────────────────────────
-from fastapi import Request
-from fastapi.responses import JSONResponse
-import base64
-
-@app.get("/api/voice/profiles")
-async def api_voice_profiles():
-    """Kayıtlı tüm biyometrik ses profillerini ve Pitch/Cinsiyet bilgilerini döner."""
-    try:
-        from actions.voice_recognition import list_voice_profiles, get_similarity_threshold
-        profiles = list_voice_profiles()
-        threshold = get_similarity_threshold()
-        return JSONResponse({"status": "ok", "profiles": profiles, "threshold": threshold})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-
-@app.post("/api/voice/enroll")
-async def api_voice_enroll(request: Request):
-    """Tarayıcı Ses Stüdyosundan gelen PCM kaydını konuşmacı profili olarak kaydeder."""
-    try:
-        data = await request.json()
-        name = str(data.get("name", "")).strip()
-        role = str(data.get("role", "")).strip()
-        audio_b64 = data.get("audio_b64", "")
-        
-        if not name:
-            return JSONResponse({"status": "error", "message": "Konuşmacı adı gereklidir."}, status_code=400)
-            
-        from actions.voice_recognition import enroll_speaker_from_pcm, list_voice_profiles, get_recent_live_audio
-        
-        if audio_b64:
-            pcm_bytes = base64.b64decode(audio_b64)
-        else:
-            pcm_bytes = get_recent_live_audio(4.0)
-            
-        if not pcm_bytes or len(pcm_bytes) < int(16000 * 2 * 0.5):
-            return JSONResponse({"status": "error", "message": "Yetersiz ses kaydı. Lütfen mikrofona en az 2-3 saniye net konuşun."}, status_code=400)
-            
-        msg = enroll_speaker_from_pcm(name, pcm_bytes, role=role)
-        profiles = list_voice_profiles()
-        return JSONResponse({"status": "ok", "message": msg, "profiles": profiles})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-
-@app.post("/api/voice/delete")
-async def api_voice_delete(request: Request):
-    """Bir veya tüm ses profillerini siler."""
-    try:
-        data = await request.json()
-        name = str(data.get("name", "")).strip()
-        from actions.voice_recognition import remove_voice_profile, list_voice_profiles
-        msg = remove_voice_profile(name)
-        profiles = list_voice_profiles()
-        return JSONResponse({"status": "ok", "message": msg, "profiles": profiles})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
-
-@app.post("/api/voice/test")
-async def api_voice_test(request: Request):
-    """Canlı mikrofondan gelen sesi test eder ve hibrit skor dökümünü döner."""
-    try:
-        data = await request.json()
-        audio_b64 = data.get("audio_b64", "")
-        from actions.voice_recognition import default_speaker_tracker, get_recent_live_audio
-        
-        if audio_b64:
-            pcm_bytes = base64.b64decode(audio_b64)
-        else:
-            pcm_bytes = get_recent_live_audio(3.0)
-            
-        if not pcm_bytes or len(pcm_bytes) < int(16000 * 2 * 0.4):
-            return JSONResponse({"status": "error", "message": "Ses örneği çok kısa veya sessiz."}, status_code=400)
-            
-        spk, state, meta = default_speaker_tracker.process_pcm_frame(pcm_bytes)
-        return JSONResponse({"status": "ok", "identified_speaker": spk, "state": state, "meta": meta})
-    except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
 def _check_token(ws: WebSocket) -> bool:

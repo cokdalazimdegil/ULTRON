@@ -736,46 +736,6 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "get_voice_recognition_status",
-        "description": "Kayıtlı tüm konuşmacı biyometrik ses profillerini (Nuri Can, Rabia, Ahmet vb.) ve doğrulama eşiğini sorgular.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {}
-        }
-    },
-    {
-        "name": "enroll_voice_profile",
-        "description": "Konuşan kişinin ses biyometrisini kaydeder veya günceller. Kullanıcı 'sesimi kaydet', 'Ahmet'i kaydet', 'ses profilimi oluştur' dediğinde kullan.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "speaker_name": {
-                    "type": "STRING",
-                    "description": "Kaydedilecek konuşmacının adı (örn: 'Nuri Can', 'Rabia', 'Ahmet', 'Mehmet')"
-                },
-                "role": {
-                    "type": "STRING",
-                    "description": "Kişinin rolü veya yakınlığı (örn: 'Nuri Can\\'ın Arkadaşı', 'Misafir', 'Kardeşi')"
-                }
-            },
-            "required": ["speaker_name"]
-        }
-    },
-    {
-        "name": "remove_voice_profile",
-        "description": "Kayıtlı bir konuşmacı ses profilini kalıcı olarak siler. Kullanıcı 'Ahmet\\'in ses kaydını sil', 'ses profilimi kaldır' dediğinde kullan.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "speaker_name": {
-                    "type": "STRING",
-                    "description": "Silinecek konuşmacının adı (örn: 'Ahmet')"
-                }
-            },
-            "required": ["speaker_name"]
-        }
-    },
-    {
         "name": "screen_awareness",
         "description": "Bilgisayar ekranında ne olduğunu yerel ve görsel modellerle analiz eder. Kullanıcı 'ekranda ne var?', 'aktif pencere ne?', 'ekranı gör/oku' dediğinde kullan.",
         "parameters": {

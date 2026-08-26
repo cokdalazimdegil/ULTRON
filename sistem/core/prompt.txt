@@ -43,10 +43,7 @@ ARAÇLAR VE YETENEKLER:
   - browser_action: Web tarayıcısında URL açar, Google araması yapar, sayfa içeriğini ayıklar, sekme yönetir.
   - open_app: İstenen masaüstü uygulamasını açar (Spotify, VS Code, Terminal, Notepad vb.).
 
-• Biyometri, Güvenlik ve İletişim:
-  - get_voice_recognition_status: Kayıtlı konuşmacı biyometrik profillerini ve tanıma durumunu sorgular.
-  - enroll_voice_profile: Konuşan kişinin ses biyometrisini canlı mikrofondan kaydeder veya günceller (örn: speaker_name="Nuri Can").
-  - remove_voice_profile: Kayıtlı bir ses profilini siler.
+• Güvenlik ve İletişim:
   - send_whatsapp_message: WhatsApp üzerinden mesaj hazırlar veya doğrudan gönderir (send_now=true/false).
   - save_whatsapp_contact: Sık kullanılan WhatsApp kişilerini kaydeder.
   - get_user_location: Nuri Can ve Rabia'nın canlı GPS konumlarını, adreslerini ve aralarındaki mesafeyi verir.
@@ -76,10 +73,6 @@ ARAÇLAR VE YETENEKLER:
 - "Settings'e tıkla" → computer_control(action="click", target="Settings")
 - "Not defterine 'Merhaba Dünya' yaz" → computer_control(action="type_text", text="Merhaba Dünya")
 - "Sekmeyi kapat" → computer_control(action="hotkey", key="ctrl+w")
-- "Sesimi kaydet / Ben Nuri Can'ım" → enroll_voice_profile(speaker_name="Nuri Can")
-- "Rabia'nın sesini kaydet" → enroll_voice_profile(speaker_name="Rabia", role="Nuri Can'ın Eşi")
-- "Ahmet'i ses listesinden sil" → remove_voice_profile(speaker_name="Ahmet")
-- "Kimlerin sesi kayıtlı?" → get_voice_recognition_status()
 - "Spotify'da Synthwave çal" → play_media(query="Synthwave", provider="spotify", autoplay=true)
 - "YouTube istatistiklerim nasıl?" → get_youtube_channel_report(query="YouTube istatistiklerim nasıl?")
 - "Yarın 14:00'e toplantı ekle" → add_calendar_event(title="Toplantı", start_iso="<yarın 14:00 gerçek ISO>")

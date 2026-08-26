@@ -38,7 +38,6 @@
     <div class="brand">U.L.T.R.O.N <span class="sub">GLOBAL CORE</span></div>
     <div class="status-row">
       <div id="status" class="status-indicator">STANDBY</div>
-      <div id="speaker-chip" class="speaker-chip hidden">🎙️ SES: NURİ CAN</div>
     </div>
     <!-- Satellite Agent Orbs Floating HUD Bar -->
     <div id="active-agents-bar" class="active-agents-bar"></div>
@@ -47,10 +46,6 @@
   <!-- HUD Top Right -->
   <div id="hud-top-right">
     <div class="top-actions">
-      <!-- Voice Profile Studio Button -->
-      <button id="btn-voice-modal" class="btn-hud-action" title="Biyometrik Ses Profili Stüdyosu">
-        🎙️ SES STÜDYOSU
-      </button>
       <!-- QR Code Mobile Connect Button -->
       <button id="btn-qr-modal" class="btn-hud-action" title="Telefondan Bağlan (QR Kod Aç)">
         📱 QR BAĞLANTI
@@ -111,53 +106,6 @@
       <button id="btn-cam" class="ctl">📷 CAM</button>
     </div>
     <div id="build-stamp"></div>
-  </div>
-
-  <!-- Voice Profile Studio Modal -->
-  <div id="voice-modal" class="modal-overlay hidden">
-    <div class="modal-card voice-card-wide">
-      <div class="modal-header">
-        <div class="modal-title">🎙️ BİYOMETRİK SES STÜDYOSU // NEURAL PROFILES</div>
-        <button id="btn-close-voice" class="modal-close-btn" title="Kapat">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="voice-section-title">KAYITLI BİYOMETRİK SES PROFİLLERİ</div>
-        <div id="voice-profiles-list" class="voice-profiles-grid">
-          <div class="voice-loading">Yükleniyor...</div>
-        </div>
-
-        <div class="voice-divider"></div>
-
-        <div class="voice-section-title">✨ SES PROFİLİ KAYDET / GÜNCELLE (4 Saniye)</div>
-        <div class="voice-enroll-box">
-          <div class="voice-form-row">
-            <input id="voice-name-input" type="text" placeholder="Kişi Adı / İsim (örn: Nuri Can, Rabia, Mehmet...)">
-            <input id="voice-role-input" type="text" placeholder="Rol / Açıklama (örn: Yönetici, Aile Üyesi, Misafir...)">
-          </div>
-
-          <!-- Live Audio Visualizer Canvas -->
-          <div class="voice-visualizer-wrap">
-            <canvas id="voice-visualizer-canvas" width="600" height="70"></canvas>
-            <div id="voice-vu-level" class="voice-vu-level">● SİNYAL: BEKLİYOR</div>
-          </div>
-
-          <div class="voice-record-controls">
-            <button id="btn-start-enroll-record" class="btn-voice-action">🔴 4 SANİYELİK KAYDI BAŞLAT</button>
-            <button id="btn-test-voice-recognition" class="btn-voice-secondary">🧪 SESİMİ TEST ET (3s)</button>
-            <button id="btn-wipe-all-profiles" class="btn-voice-danger">🗑️ Tümünü Sıfırla</button>
-          </div>
-
-          <div id="voice-meter-wrap" class="voice-meter-wrap hidden">
-            <div id="voice-meter-bar" class="voice-meter-bar"></div>
-            <div id="voice-countdown-text" class="voice-countdown-text">4...</div>
-          </div>
-
-          <div id="voice-feedback-msg" class="voice-feedback-msg">
-            Mikrofona 4 saniye boyunca normal konuşma cümlenizi söyleyin. Sistem CAM++ 512-D akustik gömmesini ve F0 Pitch frekansınızı kaydedecektir.
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- QR Code Connection Modal -->
