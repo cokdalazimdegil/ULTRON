@@ -212,6 +212,7 @@ def _synthesize_with_gemini(query: str, combined_sources: str) -> str:
             pass
     if not api_key:
         return ""
+    import time
     try:
         import google.genai as genai
         import google.genai.types as gtypes
@@ -230,14 +231,28 @@ def _synthesize_with_gemini(query: str, combined_sources: str) -> str:
             f"## Kaynaklar\n\n"
             f"---\nHAM VERİLER:\n{combined_sources[:14000]}"
         )
-        resp = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=synthesis_prompt,
-            config=gtypes.GenerateContentConfig(temperature=0.3, max_output_tokens=4096)
-        )
-        return resp.text or ""
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = client.models.generate_content(
+                    model="gemini-flash-latest", # gemini-2.5-flash da kullanılabilir
+                    contents=synthesis_prompt,
+                    config=gtypes.GenerateContentConfig(temperature=0.3, max_output_tokens=4096)
+                )
+                return resp.text or ""
+            except Exception as e:
+                err_str = str(e)
+                if "503" in err_str or "429" in err_str or "quota" in err_str.lower():
+                    logger.warning(f"[Research] Gemini yoğunluk hatası (Deneme {attempt+1}/{max_retries}): {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(5) # 5 saniye bekle ve tekrar dene
+                        continue
+                logger.warning(f"[Research] Gemini sentez hatası: {e}")
+                return ""
+                
     except Exception as e:
-        logger.warning(f"[Research] Gemini sentez hatası: {e}")
+        logger.warning(f"[Research] Gemini kütüphane hatası: {e}")
         return ""
 
 

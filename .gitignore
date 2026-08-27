@@ -88,3 +88,8 @@ sistem/snapshots/
 # Binaries downloaded on setup
 cloudflared.exe
 sistem/cloudflared.exe
+sistem/data/
+sistem/actions/workspace/token.json
+sistem/actions/workspace/credentials.json
+*.wav
+*.session

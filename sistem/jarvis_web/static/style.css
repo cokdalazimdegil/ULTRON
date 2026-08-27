@@ -13,6 +13,15 @@
   --glass-border: rgba(255, 68, 34, 0.25);
 }
 
+@keyframes glitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 1px) }
+  40% { transform: translate(-1px, -1px) }
+  60% { transform: translate(2px, 1px) }
+  80% { transform: translate(1px, -1px) }
+  100% { transform: translate(0) }
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -95,6 +104,7 @@ html, body {
   background: rgba(255,68,34,0.2);
   box-shadow: 0 0 14px rgba(255,68,34,0.4);
   text-shadow: 0 0 6px var(--ultron);
+  animation: glitch 0.3s linear infinite;
 }
 
 /* Typographic Elements */
@@ -373,6 +383,7 @@ html, body {
   border-color: var(--amber); color: var(--amber);
   box-shadow: 0 0 10px rgba(255,170,48,0.25) inset, 0 0 8px rgba(255,170,48,0.3);
   text-shadow: 0 0 6px var(--amber);
+  animation: glitch 0.3s linear infinite;
 }
 .ctl.active {
   border-color: var(--amber); color: var(--amber);

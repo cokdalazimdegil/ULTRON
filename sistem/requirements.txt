@@ -33,3 +33,6 @@ pywin32>=306; sys_platform == "win32"
 mss>=9.0.0; sys_platform == "win32"
 pyttsx3>=2.90; sys_platform == "win32"
 pywinauto>=0.6.8; sys_platform == "win32"
+telethon
+py-tgcalls
+pydub

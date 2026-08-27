@@ -1,0 +1,59 @@
+"""
+ULTRON Daemon Manager (Arka Plan Hizmetleri Yöneticisi)
+──────────────────────────────────────────────────────
+Tüm arka plan asistanlarını ve thread'leri merkezi olarak
+başlatıp durdurur.
+"""
+
+import logging
+
+logger = logging.getLogger("ultron.core.daemon_manager")
+
+class DaemonManager:
+    def __init__(self):
+        self.daemons = []
+
+    def register(self, start_func, stop_func, name: str):
+        """Başlatma ve durdurma fonksiyonlarını kaydeder."""
+        self.daemons.append({
+            "name": name,
+            "start": start_func,
+            "stop": stop_func
+        })
+
+    def start_all(self):
+        for daemon in self.daemons:
+            try:
+                daemon["start"]()
+                logger.info(f"[DaemonManager] {daemon['name']} başlatıldı.")
+            except Exception as e:
+                logger.error(f"[DaemonManager] {daemon['name']} başlatılamadı: {e}")
+
+    def stop_all(self):
+        for daemon in self.daemons:
+            try:
+                daemon["stop"]()
+                logger.info(f"[DaemonManager] {daemon['name']} durduruldu.")
+            except Exception as e:
+                logger.error(f"[DaemonManager] {daemon['name']} durdurulamadı: {e}")
+
+daemon_manager = DaemonManager()
+
+# --- Modülleri İçe Aktar ve Kaydet ---
+try:
+    from computer.proactive_watcher import proactive_watcher
+    daemon_manager.register(proactive_watcher.start_watcher, proactive_watcher.stop_watcher, "Proactive Watcher (Ekran/Hata)")
+except Exception: pass
+
+try:
+    from computer.cyber_dog import cyber_dog
+    daemon_manager.register(cyber_dog.start_patrol, cyber_dog.stop_patrol, "Cyber-Dog")
+except Exception: pass
+
+# Companion mode otomatik başlamaz, kullanıcı tetikler
+# Swarm manager proje bazlı başlar
+# Workspace Agent'ı kaydedelim:
+try:
+    from core.proactive_agent import workspace_agent
+    daemon_manager.register(workspace_agent.start, workspace_agent.stop, "Workspace Agent")
+except Exception: pass

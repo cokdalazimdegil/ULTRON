@@ -34,7 +34,6 @@ sys.path.insert(0, str(BASE_DIR))
 from actions.open_app  import open_app
 from actions.sys_info  import sys_info
 from actions.weather   import get_weather_summary
-from actions.calendar  import get_calendar_events, add_calendar_event, delete_calendar_event
 from actions.reminders import get_reminders, add_reminder, delete_reminder
 from actions.browser   import browser_control
 from actions.shell     import shell_run
@@ -48,7 +47,6 @@ from actions.clipboard_tools import clipboard_control
 from actions.web_tools import fetch_webpage_content
 from actions.proactive_engine import set_proactive_timer, get_active_timers, cancel_timer
 from actions.location_tracker import get_user_location
-from actions.email_manager import get_unread_emails, read_email_detail, search_emails
 from actions.youtube_stats import get_youtube_channel_report
 from actions.research_engine import handle_web_search, handle_deep_research
 from memory.memory_manager import update_memory, delete_memory
@@ -134,33 +132,12 @@ def execute_tool(name: str, args: dict) -> str:
         if name == "web_search":
             return handle_web_search(args)
 
+        if name == "trigger_phone_call":
+            from actions.twilio_caller import make_phone_call
+            return make_phone_call(args.get("message", "Ultron acil durum uyarısı."))
+
         if name == "deep_research":
             return handle_deep_research(args)
-
-        if name == "get_calendar_events":
-            return get_calendar_events(
-                args.get("query", "today"),
-                int(args.get("limit", 6) or 6),
-            ) or "Takvim bilgisi alindi."
-
-        if name == "add_calendar_event":
-            return add_calendar_event(
-                args.get("title", ""),
-                args.get("start_iso", ""),
-                args.get("end_iso", ""),
-                args.get("notes", ""),
-                args.get("location", ""),
-                args.get("calendar_name", ""),
-                bool(args.get("all_day", False)),
-            ) or "Takvim etkinligi eklendi."
-
-        if name == "delete_calendar_event":
-            return delete_calendar_event(
-                args.get("title", ""),
-                args.get("start_iso", ""),
-                args.get("calendar_name", ""),
-                bool(args.get("delete_all_matches", False)),
-            ) or "Takvim etkinligi silindi."
 
         if name == "get_reminders":
             return get_reminders(
@@ -197,6 +174,51 @@ def execute_tool(name: str, args: dict) -> str:
                 args.get("command", ""),
                 args.get("cwd", ""),
             ) or "Komut çalıştırıldı."
+
+        if name == "workspace_search_emails":
+            from actions.workspace.gmail_service import search_emails
+            res = search_emails(args.get("query", ""), int(args.get("max_results", 5)))
+            return str(res)
+
+        if name == "workspace_read_email":
+            from actions.workspace.gmail_service import read_email_content
+            return read_email_content(args.get("message_id", ""))
+
+        if name == "workspace_draft_email":
+            from actions.workspace.gmail_service import send_or_draft_email
+            return send_or_draft_email(
+                args.get("to", ""), 
+                args.get("subject", ""), 
+                args.get("body", ""), 
+                bool(args.get("is_draft", True))
+            )
+
+        if name == "workspace_search_drive":
+            from actions.workspace.drive_service import search_drive_files
+            res = search_drive_files(args.get("name_query", ""), args.get("mime_type"))
+            return str(res)
+
+        if name == "workspace_read_drive_file":
+            from actions.workspace.drive_service import read_drive_file
+            return read_drive_file(args.get("file_id", ""))
+
+        if name == "workspace_upload_drive":
+            from actions.workspace.drive_service import upload_file_to_drive
+            return upload_file_to_drive(args.get("file_path", ""))
+
+        if name == "workspace_get_upcoming_events":
+            from actions.workspace.calendar_service import get_upcoming_events
+            res = get_upcoming_events(int(args.get("days_ahead", 1)))
+            return str(res)
+
+        if name == "workspace_create_event":
+            from actions.workspace.calendar_service import create_calendar_event
+            return create_calendar_event(
+                args.get("title", ""),
+                args.get("start_time", ""),
+                args.get("end_time", ""),
+                args.get("description", "")
+            )
 
         if name == "play_media":
             return play_media(
@@ -294,23 +316,6 @@ def execute_tool(name: str, args: dict) -> str:
 
         if name == "get_user_location":
             return get_user_location(args.get("user_name", "all")) or "Konum alındı."
-
-        if name == "get_unread_emails":
-            return get_unread_emails(
-                int(args.get("limit", 5) or 5),
-                bool(args.get("only_important", False)),
-            ) or "E-postalar kontrol edildi."
-
-        if name == "read_email_detail":
-            return read_email_detail(
-                args.get("index_or_query", "1"),
-            ) or "E-posta okundu."
-
-        if name == "search_emails":
-            return search_emails(
-                args.get("query", ""),
-                int(args.get("limit", 5) or 5),
-            ) or "Arama tamamlandı."
 
         if name == "send_email":
             from actions.email_manager import send_email
@@ -431,17 +436,39 @@ def execute_tool(name: str, args: dict) -> str:
                 return "Önceki sayfaya dönüldü." if ok else "Geri dönülemedi."
             return f"Bilinmeyen tarayıcı eylemi: {action}"
 
+        if name == "start_swarm_project":
+            desc = args.get("project_description", "").strip()
+            import threading
+            from orchestrator.swarm_manager import swarm_manager
+            
+            # Arka planda çalıştır (Zaman aşımını önlemek için)
+            threading.Thread(target=swarm_manager.start_project, args=(desc,), daemon=True).start()
+            return "Swarm projesi arka planda başarıyla başlatıldı. Takım (PM, Coder, QA) görevi aldı."
+
+        if name == "start_companion_mode":
+            from actions.companion_mode import companion_engine
+            return companion_engine.start()
+
+        if name == "stop_companion_mode":
+            from actions.companion_mode import companion_engine
+            return companion_engine.stop()
+
         if name == "autonomous_task":
             desc = args.get("task_description", "").strip()
             is_res = bool(args.get("research_mode", False))
-            from computer.task_executor import TaskEngine
-            if is_res:
-                from computer.research_engine import execute_research_plan
-                res = execute_research_plan(desc)
-                return res.get("summary", "Araştırma tamamlandı.")
+            import threading
             
-            task = TaskEngine.create_task(desc, owner="Nuri Can")
-            return TaskEngine.execute_task_sync(task)
+            def _run_autonomous():
+                from computer.task_executor import TaskEngine
+                if is_res:
+                    from computer.research_engine import execute_research_plan
+                    execute_research_plan(desc)
+                else:
+                    task = TaskEngine.create_task(desc, owner="Nuri Can")
+                    TaskEngine.execute_task_sync(task)
+                    
+            threading.Thread(target=_run_autonomous, daemon=True).start()
+            return "Otonom görev arka planda başlatıldı."
 
         if name == "emergency_stop":
             from computer.safety_manager import SafetyManager
@@ -451,9 +478,14 @@ def execute_tool(name: str, args: dict) -> str:
 
         if name == "orchestrate_task":
             desc = args.get("task_description", "").strip()
-            from orchestrator.orchestrator_engine import OrchestratorEngine
-            res = OrchestratorEngine.orchestrate_task(desc, user_name="Nuri Can")
-            return res.get("final_report", "Orkestrasyon tamamlandı.")
+            import threading
+            
+            def _run_orchestration():
+                from orchestrator.orchestrator_engine import OrchestratorEngine
+                OrchestratorEngine.orchestrate_task(desc, user_name="Nuri Can")
+                
+            threading.Thread(target=_run_orchestration, daemon=True).start()
+            return "Orkestrasyon arka planda başlatıldı. Geliştirme, test ve analiz işlemleri bittiğinde bilgi verilecek."
 
         if name == "code_action":
             action = args.get("action", "").lower().strip()

@@ -21,15 +21,14 @@ from app_config import get_app_config_value
 logger = logging.getLogger("ultron.orchestrator.gemini_reasoning")
 
 PRO_MODELS = (
-    "models/gemini-2.5-pro",
-    "models/gemini-2.5-flash",
-    "models/gemini-flash-latest",
+    "gemini-2.0-pro-exp-02-05",
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
 )
 
 FLASH_MODELS = (
-    "models/gemini-2.5-flash",
-    "models/gemini-2.5-flash-lite",
-    "models/gemini-flash-latest",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
 )
 
 

@@ -790,6 +790,41 @@ async function startMic() {
   await S.audioCtx.audioWorklet.addModule("/static/pcm-worklet.js");
 
   const srcNode = S.audioCtx.createMediaStreamSource(S.micStream);
+  // --- Audio Visualizer Injection ---
+  S.analyserNode = S.audioCtx.createAnalyser();
+  S.analyserNode.fftSize = 64;
+  srcNode.connect(S.analyserNode);
+
+  const visCanvas = document.getElementById("audio-visualizer");
+  if (visCanvas) {
+    const visCtx = visCanvas.getContext("2d");
+    const bufferLength = S.analyserNode.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function drawVisualizer() {
+      if (!S.micStream) {
+        visCtx.clearRect(0, 0, visCanvas.width, visCanvas.height);
+        return; // stop if mic closed
+      }
+      requestAnimationFrame(drawVisualizer);
+      S.analyserNode.getByteFrequencyData(dataArray);
+
+      visCtx.clearRect(0, 0, visCanvas.width, visCanvas.height);
+      const barWidth = (visCanvas.width / bufferLength) * 1.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * visCanvas.height;
+        // Ultron color
+        visCtx.fillStyle = `rgb(255, ${68 + (dataArray[i] / 2)}, 34)`;
+        visCtx.fillRect(x, visCanvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 2;
+      }
+    }
+    drawVisualizer();
+  }
+  // ----------------------------------
+
 
   // 1. Highpass Filter (85 Hz)
   const highpass = S.audioCtx.createBiquadFilter();

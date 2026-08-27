@@ -5,6 +5,183 @@ Masaüstü (main.py) ve web sunucusu (jarvis_web/server.py) ortak kullanır.
 
 TOOL_DECLARATIONS = [
     {
+        "name": "trigger_phone_call",
+        "description": "Kullanıcıyı doğrudan cebindeki numaradan (Twilio GSM) arar ve ilettiğin mesajı sesli olarak okur.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "message": {
+                    "type": "STRING",
+                    "description": "Kullanıcı telefonu açtığında sesli olarak okunacak mesaj."
+                }
+            },
+            "required": [
+                "message"
+            ]
+        }
+    },
+    {
+        "name": "workspace_search_emails",
+        "description": "Google Workspace üzerinden e-postaları arar (Gmail query syntax destekler). Örn: 'is:unread', 'from:patron@sirket.com'.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "Gmail arama sorgusu"
+                },
+                "max_results": {
+                    "type": "INTEGER",
+                    "description": "Maksimum e-posta sayısı"
+                }
+            },
+            "required": [
+                "query"
+            ]
+        }
+    },
+    {
+        "name": "workspace_read_email",
+        "description": "Belirli bir e-postanın gövdesini (snippet veya detay) okur.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "message_id": {
+                    "type": "STRING",
+                    "description": "Okunacak e-postanın message ID'si"
+                }
+            },
+            "required": [
+                "message_id"
+            ]
+        }
+    },
+    {
+        "name": "workspace_draft_email",
+        "description": "Gmail üzerinden e-posta taslağı oluşturur veya gönderir.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "to": {
+                    "type": "STRING",
+                    "description": "Alıcı e-posta adresi"
+                },
+                "subject": {
+                    "type": "STRING",
+                    "description": "Konu"
+                },
+                "body": {
+                    "type": "STRING",
+                    "description": "E-posta içeriği"
+                },
+                "is_draft": {
+                    "type": "BOOLEAN",
+                    "description": "Taslak olarak kalsın mı? (Varsayılan: True)"
+                }
+            },
+            "required": [
+                "to",
+                "subject",
+                "body"
+            ]
+        }
+    },
+    {
+        "name": "workspace_search_drive",
+        "description": "Google Drive üzerinde dosya arar.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "name_query": {
+                    "type": "STRING",
+                    "description": "Dosya adı sorgusu"
+                },
+                "mime_type": {
+                    "type": "STRING",
+                    "description": "Opsiyonel. Örn: 'application/vnd.google-apps.document'"
+                }
+            },
+            "required": [
+                "name_query"
+            ]
+        }
+    },
+    {
+        "name": "workspace_read_drive_file",
+        "description": "Google Drive'daki bir dosyanın veya dökümanın içeriğini okur.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "file_id": {
+                    "type": "STRING",
+                    "description": "Drive dosya ID'si"
+                }
+            },
+            "required": [
+                "file_id"
+            ]
+        }
+    },
+    {
+        "name": "workspace_upload_drive",
+        "description": "Yerel bilgisayardaki bir dosyayı Google Drive'a yükler.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "file_path": {
+                    "type": "STRING",
+                    "description": "Yüklenecek yerel dosyanın tam yolu"
+                }
+            },
+            "required": [
+                "file_path"
+            ]
+        }
+    },
+    {
+        "name": "workspace_get_upcoming_events",
+        "description": "Google Takvim üzerinden bugünkü veya gelecek günlerdeki toplantıları/etkinlikleri getirir.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "days_ahead": {
+                    "type": "INTEGER",
+                    "description": "Kaç gün sonrasına kadar getirilsin? (Varsayılan: 1)"
+                }
+            }
+        }
+    },
+    {
+        "name": "workspace_create_event",
+        "description": "Google Takvime yeni etkinlik ekler.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "title": {
+                    "type": "STRING",
+                    "description": "Etkinlik başlığı"
+                },
+                "start_time": {
+                    "type": "STRING",
+                    "description": "Başlangıç zamanı (ISO 8601, örn: 2026-08-28T10:00:00)"
+                },
+                "end_time": {
+                    "type": "STRING",
+                    "description": "Bitiş zamanı (ISO 8601, örn: 2026-08-28T11:00:00)"
+                },
+                "description": {
+                    "type": "STRING",
+                    "description": "Etkinlik detayı"
+                }
+            },
+            "required": [
+                "title",
+                "start_time",
+                "end_time"
+            ]
+        }
+    },
+    {
         "name": "open_app",
         "description": "macOS'ta herhangi bir uygulamayı açar. Spotify, Safari, Terminal, Finder, VS Code vb.",
         "parameters": {
@@ -15,7 +192,9 @@ TOOL_DECLARATIONS = [
                     "description": "Uygulama adı (örn. 'Spotify', 'Safari', 'Terminal')"
                 }
             },
-            "required": ["app_name"]
+            "required": [
+                "app_name"
+            ]
         }
     },
     {
@@ -29,16 +208,14 @@ TOOL_DECLARATIONS = [
                     "description": "battery | cpu | ram | disk | time | date | network | all"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "get_weather",
-        "description": (
-            "Anlik hava durumunu ozetler. Konum verilmezse kullanicinin "
-            "BULUNDUGU sehir otomatik tespit edilir. "
-            "Kullanici hava durumunu, sicakligi veya yagmur durumunu sordugunda kullan."
-        ),
+        "description": "Anlik hava durumunu ozetler. Konum verilmezse kullanicinin BULUNDUGU sehir otomatik tespit edilir. Kullanici hava durumunu, sicakligi veya yagmur durumunu sordugunda kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -50,109 +227,8 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "get_calendar_events",
-        "description": (
-            "Apple Calendar takvimini okur. "
-            "Bugun, yarin, siradaki etkinlik veya yaklasan ajandayi ozetler. "
-            "Kullanici toplanti, takvim, ajanda, etkinlik veya gunluk programini sordugunda kullan."
-        ),
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "query": {
-                    "type": "STRING",
-                    "description": (
-                        "today | tomorrow | next | agenda | week veya dogal dilde "
-                        "'onumuzdeki 30 gun', '2 hafta', 'bu ay', 'gelecek ay'"
-                    )
-                },
-                "limit": {
-                    "type": "NUMBER",
-                    "description": "Maksimum etkinlik sayisi"
-                }
-            },
-            "required": ["query"]
-        }
-    },
-    {
-        "name": "add_calendar_event",
-        "description": (
-            "Apple Calendar takvimine yeni etkinlik ekler. "
-            "Kullanici toplanti, randevu, takvime ekleme veya etkinlik olusturma isterse kullan. "
-            "Baslangic tarihini gercek tarih/saat olarak ver; bitis verilmezse varsayilan sure kullanilir."
-        ),
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "title": {
-                    "type": "STRING",
-                    "description": "Etkinlik basligi. Ornek: 'Disci Randevusu'"
-                },
-                "start_iso": {
-                    "type": "STRING",
-                    "description": "Baslangic tarih/saat. ISO veya yyyy-MM-dd HH:mm formatinda."
-                },
-                "end_iso": {
-                    "type": "STRING",
-                    "description": "Bitis tarih/saat. Opsiyonel."
-                },
-                "location": {
-                    "type": "STRING",
-                    "description": "Etkinlik konumu. Opsiyonel."
-                },
-                "notes": {
-                    "type": "STRING",
-                    "description": "Etkinlik notlari. Opsiyonel."
-                },
-                "calendar_name": {
-                    "type": "STRING",
-                    "description": "Eklenecek takvim adi. Opsiyonel."
-                },
-                "all_day": {
-                    "type": "BOOLEAN",
-                    "description": "true ise tum gun etkinligi olusturur."
-                }
-            },
-            "required": ["title", "start_iso"]
-        }
-    },
-    {
-        "name": "delete_calendar_event",
-        "description": (
-            "Apple Calendar takviminden etkinlik siler. "
-            "Kullanici bir toplantiyi, randevuyu veya takvim kaydini silmek istediginde kullan. "
-            "Ayni ada birden fazla etkinlik varsa dogru kaydi bulmak icin baslangic tarihini gercek tarih/saat olarak ver."
-        ),
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "title": {
-                    "type": "STRING",
-                    "description": "Silinecek etkinlik basligi. Ornek: 'Disci Randevusu'"
-                },
-                "start_iso": {
-                    "type": "STRING",
-                    "description": "Opsiyonel tarih/saat. Ayni isimli birden fazla etkinligi ayirt etmek icin kullan."
-                },
-                "calendar_name": {
-                    "type": "STRING",
-                    "description": "Opsiyonel takvim adi"
-                },
-                "delete_all_matches": {
-                    "type": "BOOLEAN",
-                    "description": "true ise eslesen tum etkinlikleri siler"
-                }
-            },
-            "required": ["title"]
-        }
-    },
-    {
         "name": "get_reminders",
-        "description": (
-            "Apple Animsaticilar listesini okur. "
-            "Bugunku, yaklasan, geciken veya tum acik animsaticilari ozetler. "
-            "Kullanici hatirlatma, animsatici, reminder veya yapilacaklar listesini sordugunda kullan."
-        ),
+        "description": "Apple Animsaticilar listesini okur. Bugunku, yaklasan, geciken veya tum acik animsaticilari ozetler. Kullanici hatirlatma, animsatici, reminder veya yapilacaklar listesini sordugunda kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -169,16 +245,14 @@ TOOL_DECLARATIONS = [
                     "description": "Istenirse belirli bir animsatici listesi adi"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "add_reminder",
-        "description": (
-            "Apple Animsaticilar uygulamasina yeni bir animsatici ekler. "
-            "Kullanici 'hatirlat', 'animsatici ekle', 'reminder kur' dediginde kullan. "
-            "Goreli zaman ifadelerini bugunku tarih baglamina gore due_iso alanina ISO formatinda cevir."
-        ),
+        "description": "Apple Animsaticilar uygulamasina yeni bir animsatici ekler. Kullanici 'hatirlat', 'animsatici ekle', 'reminder kur' dediginde kullan. Goreli zaman ifadelerini bugunku tarih baglamina gore due_iso alanina ISO formatinda cevir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -207,7 +281,9 @@ TOOL_DECLARATIONS = [
                     "description": "Tum gun animsatici ise true"
                 }
             },
-            "required": ["title"]
+            "required": [
+                "title"
+            ]
         }
     },
     {
@@ -216,20 +292,27 @@ TOOL_DECLARATIONS = [
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING", "description": "open_url | search | play_youtube"},
-                "url":    {"type": "STRING", "description": "Açılacak URL (open_url için)"},
-                "query":  {"type": "STRING", "description": "Arama sorgusu (search veya play_youtube için)"}
+                "action": {
+                    "type": "STRING",
+                    "description": "open_url | search | play_youtube"
+                },
+                "url": {
+                    "type": "STRING",
+                    "description": "Açılacak URL (open_url için)"
+                },
+                "query": {
+                    "type": "STRING",
+                    "description": "Arama sorgusu (search veya play_youtube için)"
+                }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "shell_run",
-        "description": (
-            "Bilgisayar terminalinde PowerShell, Cmd veya bash komutları çalıştırır. "
-            "Dosya yönetimi, git işlemleri, python/node betikleri, ağ ve sistem durumunu sorgulama, "
-            "paket yükleme veya herhangi bir komut çalıştırmak istediğinde kullan."
-        ),
+        "description": "Bilgisayar terminalinde PowerShell, Cmd veya bash komutları çalıştırır. Dosya yönetimi, git işlemleri, python/node betikleri, ağ ve sistem durumunu sorgulama, paket yükleme veya herhangi bir komut çalıştırmak istediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -242,17 +325,14 @@ TOOL_DECLARATIONS = [
                     "description": "Komutun çalıştırılacağı dizin yolu (opsiyonel)."
                 }
             },
-            "required": ["command"]
+            "required": [
+                "command"
+            ]
         }
     },
     {
         "name": "toggle_webcam",
-        "description": (
-            "Gerçek zamanlı webcam akışını başlatır veya durdurur. "
-            "Akış aktifken model sürekli kamera görüntüsü alır — 'bak', 'gör', 'göster', "
-            "'kameraya bak', 'önümdekileri anlat', 'ne görüyorsun' gibi komutlarda 'start' kullan. "
-            "'kamerayı kapat', 'artık bakma' gibi durumlarda 'stop' kullan."
-        ),
+        "description": "Gerçek zamanlı webcam akışını başlatır veya durdurur. Akış aktifken model sürekli kamera görüntüsü alır — 'bak', 'gör', 'göster', 'kameraya bak', 'önümdekileri anlat', 'ne görüyorsun' gibi komutlarda 'start' kullan. 'kamerayı kapat', 'artık bakma' gibi durumlarda 'stop' kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -261,17 +341,14 @@ TOOL_DECLARATIONS = [
                     "description": "start — akışı başlat  |  stop — akışı durdur"
                 }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "play_media",
-        "description": (
-            "YouTube, Spotify veya Apple Music/Music uygulamasında şarkı, müzik veya video açar. "
-            "Kullanıcı belirli bir platform söylerse onu kullan. "
-            "Belirtmezse uygun olanı dene. "
-            "Kullanıcı 'çal', 'oynat', 'aç' diyorsa autoplay=true kullan."
-        ),
+        "description": "YouTube, Spotify veya Apple Music/Music uygulamasında şarkı, müzik veya video açar. Kullanıcı belirli bir platform söylerse onu kullan. Belirtmezse uygun olanı dene. Kullanıcı 'çal', 'oynat', 'aç' diyorsa autoplay=true kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -288,73 +365,54 @@ TOOL_DECLARATIONS = [
                     "description": "true ise mümkünse doğrudan oynatır"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "control_media",
-        "description": (
-            "Halihazirda calan medyayi kontrol eder: durdurur, devam ettirir, "
-            "sonraki/onceki parcaya gecer. Spotify, YouTube veya hangi oynatici "
-            "caliyorsa ona gider. "
-            "Kullanici 'durdur', 'duraklat', 'sustur', 'muzigi kapat', 'devam et', "
-            "'sonraki sarki', 'gec', 'onceki' gibi bir sey soyledigINDE bunu kullan. "
-            "Yeni bir sarki BASLATMAK icin bu araci degil play_media'yi kullan."
-        ),
+        "description": "Halihazirda calan medyayi kontrol eder: durdurur, devam ettirir, sonraki/onceki parcaya gecer. Spotify, YouTube veya hangi oynatici caliyorsa ona gider. Kullanici 'durdur', 'duraklat', 'sustur', 'muzigi kapat', 'devam et', 'sonraki sarki', 'gec', 'onceki' gibi bir sey soyledigINDE bunu kullan. Yeni bir sarki BASLATMAK icin bu araci degil play_media'yi kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "action": {
                     "type": "STRING",
-                    "description": (
-                        "pause (durdur/duraklat) | resume (devam et) | stop (tamamen durdur) | "
-                        "next (sonraki parca) | previous (onceki parca)"
-                    )
+                    "description": "pause (durdur/duraklat) | resume (devam et) | stop (tamamen durdur) | next (sonraki parca) | previous (onceki parca)"
                 }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "get_youtube_channel_report",
-        "description": (
-            "YouTube kanalinin public istatistiklerini ve son videolarin performansini raporlar. "
-            "Kullanici kanal istatistiklerini, abone sayisini, son videolarini, buyume hizini "
-            "veya YouTube analizini sordugunda kullan. Bu arac Studio yerine public YouTube Data API verisini kullanir."
-        ),
+        "description": "YouTube kanalinin public istatistiklerini ve son videolarin performansini raporlar. Kullanici kanal istatistiklerini, abone sayisini, son videolarini, buyume hizini veya YouTube analizini sordugunda kullan. Bu arac Studio yerine public YouTube Data API verisini kullanir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "query": {
                     "type": "STRING",
-                    "description": (
-                        "Dogal dilde analiz istegi. Ornek: "
-                        "'YouTube istatistiklerim nasil', 'son videolarimi analiz et', "
-                        "'kanal buyumemi ozetle'"
-                    )
+                    "description": "Dogal dilde analiz istegi. Ornek: 'YouTube istatistiklerim nasil', 'son videolarimi analiz et', 'kanal buyumemi ozetle'"
                 },
                 "handle": {
                     "type": "STRING",
-                    "description": (
-                        "Opsiyonel kanal handle'i, kanal linki veya kanal ID'si. "
-                        "Bos birakilirsa ayarlardaki youtube_channel_handle kullanilir."
-                    )
+                    "description": "Opsiyonel kanal handle'i, kanal linki veya kanal ID'si. Bos birakilirsa ayarlardaki youtube_channel_handle kullanilir."
                 },
                 "video_limit": {
                     "type": "NUMBER",
                     "description": "Analize dahil edilecek son video sayisi. Varsayilan 6."
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "analyze_screen",
-        "description": (
-            "Aktif pencerenin ekran goruntusunu alip Gemini vision ile analiz eder. "
-            "Kullanici ekranda ne oldugunu, bir hatayi, gorunen metni, butonlari veya pencere icerigini sordugunda kullan. "
-            "Bu surum yalnizca aktif pencereyi destekler."
-        ),
+        "description": "Aktif pencerenin ekran goruntusunu alip Gemini vision ile analiz eder. Kullanici ekranda ne oldugunu, bir hatayi, gorunen metni, butonlari veya pencere icerigini sordugunda kullan. Bu surum yalnizca aktif pencereyi destekler.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -367,7 +425,9 @@ TOOL_DECLARATIONS = [
                     "description": "Su an sadece active_window desteklenir."
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
@@ -380,11 +440,23 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "identity | preferences | projects | notes | episodic"
                 },
-                "key":     {"type": "STRING", "description": "Kısa anahtar (örn. 'name', 'python_version')"},
-                "value":   {"type": "STRING", "description": "Kısa değer (İngilizce önerilir)"},
-                "content": {"type": "STRING", "description": "Uzun metin, not veya bağlam (opsiyonel — vector hafızaya kaydedilir)"}
+                "key": {
+                    "type": "STRING",
+                    "description": "Kısa anahtar (örn. 'name', 'python_version')"
+                },
+                "value": {
+                    "type": "STRING",
+                    "description": "Kısa değer (İngilizce önerilir)"
+                },
+                "content": {
+                    "type": "STRING",
+                    "description": "Uzun metin, not veya bağlam (opsiyonel — vector hafızaya kaydedilir)"
+                }
             },
-            "required": ["category", "key"]
+            "required": [
+                "category",
+                "key"
+            ]
         }
     },
     {
@@ -402,16 +474,14 @@ TOOL_DECLARATIONS = [
                     "description": "Döndürülecek maksimum sonuç sayısı (varsayılan: 5)"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "delete_memory",
-        "description": (
-            "Kalici hafizadaki bir kaydi siler. "
-            "Kullanici 'bunu hafizandan kaldir', 'unut', 'sil' gibi bir sey derse kullan. "
-            "Mumkunse category ve key ile sil; emin degilsen match_text ile ilgili kaydi bulup kaldir."
-        ),
+        "description": "Kalici hafizadaki bir kaydi siler. Kullanici 'bunu hafizandan kaldir', 'unut', 'sil' gibi bir sey derse kullan. Mumkunse category ve key ile sil; emin degilsen match_text ile ilgili kaydi bulup kaldir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -432,14 +502,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "send_whatsapp_message",
-        "description": (
-            "WhatsApp Desktop veya WhatsApp Web üzerinden mesaj taslağı açar veya mesajı gönderir. "
-            "Kişi adı veya telefon numarasıyla çalışabilir. "
-            "Telefon numarası verilmemişse kişi adını önce kayıtlı WhatsApp kişileri ve içe aktarılan telefon rehberinde ara. "
-            "Kullanıcı 'gönder', 'yolla', 'ile', 'hemen gönder' gibi açık bir gönderme niyeti söylüyorsa "
-            "ekstra onay istemeden send_now=true kullan. "
-            "Yalnızca 'hazırla', 'taslak aç', 'yaz ama gönderme' diyorsa send_now=false kullan."
-        ),
+        "description": "WhatsApp Desktop veya WhatsApp Web üzerinden mesaj taslağı açar veya mesajı gönderir. Kişi adı veya telefon numarasıyla çalışabilir. Telefon numarası verilmemişse kişi adını önce kayıtlı WhatsApp kişileri ve içe aktarılan telefon rehberinde ara. Kullanıcı 'gönder', 'yolla', 'ile', 'hemen gönder' gibi açık bir gönderme niyeti söylüyorsa ekstra onay istemeden send_now=true kullan. Yalnızca 'hazırla', 'taslak aç', 'yaz ama gönderme' diyorsa send_now=false kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -464,15 +527,14 @@ TOOL_DECLARATIONS = [
                     "description": "true ise sohbet açıldıktan sonra mesajı otomatik gönderir"
                 }
             },
-            "required": ["message"]
+            "required": [
+                "message"
+            ]
         }
     },
     {
         "name": "save_whatsapp_contact",
-        "description": (
-            "Sık kullanılan bir WhatsApp kişisini adı ve telefon numarasıyla kalıcı belleğe kaydeder. "
-            "Kullanıcı bir kişiyi 'annem', 'Ahmet', 'iş ortağım' gibi tekrar kullanılacak şekilde tanımladığında kullan."
-        ),
+        "description": "Sık kullanılan bir WhatsApp kişisini adı ve telefon numarasıyla kalıcı belleğe kaydeder. Kullanıcı bir kişiyi 'annem', 'Ahmet', 'iş ortağım' gibi tekrar kullanılacak şekilde tanımladığında kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -489,16 +551,15 @@ TOOL_DECLARATIONS = [
                     "description": "Virgülle ayrılmış alternatif hitaplar. Örn: 'anne, annem, mom'"
                 }
             },
-            "required": ["display_name", "phone_number"]
+            "required": [
+                "display_name",
+                "phone_number"
+            ]
         }
     },
     {
         "name": "control_system",
-        "description": (
-            "Windows/macOS sistem donanım ayarlarını kontrol eder: ses seviyesi ayarlama, sesi artırma/azaltma, "
-            "sessize alma (mute), ekran parlaklığı ayarlama, ekranı kilitleme ve uyku moduna alma. "
-            "Kullanıcı 'sesi kıs', 'sesi %70 yap', 'sustur', 'parlaklığı düşür', 'bilgisayarı kilitle' dediğinde kullan."
-        ),
+        "description": "Windows/macOS sistem donanım ayarlarını kontrol eder: ses seviyesi ayarlama, sesi artırma/azaltma, sessize alma (mute), ekran parlaklığı ayarlama, ekranı kilitleme ve uyku moduna alma. Kullanıcı 'sesi kıs', 'sesi %70 yap', 'sustur', 'parlaklığı düşür', 'bilgisayarı kilitle' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -511,15 +572,14 @@ TOOL_DECLARATIONS = [
                     "description": "İşlem değeri. Örneğin volume_set veya brightness_set için 0-100 arası sayı."
                 }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "control_home_device",
-        "description": (
-            "Akıllı ev cihazlarını (Home Assistant / Işıklar / Prizler / Termostat / Sahneler) kontrol eder. "
-            "Kullanıcı 'ışıkları kapat', 'salonu aç', 'klimayı 22 derece yap', 'film modunu aç' dediğinde kullan."
-        ),
+        "description": "Akıllı ev cihazlarını (Home Assistant / Işıklar / Prizler / Termostat / Sahneler) kontrol eder. Kullanıcı 'ışıkları kapat', 'salonu aç', 'klimayı 22 derece yap', 'film modunu aç' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -540,15 +600,14 @@ TOOL_DECLARATIONS = [
                     "description": "Klima/Termostat hedef sıcaklık derecesi (örn. 22.5)"
                 }
             },
-            "required": ["device_name"]
+            "required": [
+                "device_name"
+            ]
         }
     },
     {
         "name": "get_home_status",
-        "description": (
-            "Akıllı ev durumunu ve odalardaki açık ışıkları, cihazları sorgular. "
-            "Kullanıcı 'evde açık ışık var mı', 'akıllı ev durumu nasıl' gibi sorular sorduğunda kullan."
-        ),
+        "description": "Akıllı ev durumunu ve odalardaki açık ışıkları, cihazları sorgular. Kullanıcı 'evde açık ışık var mı', 'akıllı ev durumu nasıl' gibi sorular sorduğunda kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -561,11 +620,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "file_operations",
-        "description": (
-            "Dosya ve dizin yönetimi yapar: dosya içeriğini okur (read), dosya oluşturur veya üzerine yazar (write), "
-            "dosyaya metin ekler (append), klasör içeriğini listeler (list) veya dosya arar (search). "
-            "Kullanıcı 'şu dosyayı oku', 'kod yaz ve dosyaya kaydet', 'klasördekileri listele' dediğinde kullan."
-        ),
+        "description": "Dosya ve dizin yönetimi yapar: dosya içeriğini okur (read), dosya oluşturur veya üzerine yazar (write), dosyaya metin ekler (append), klasör içeriğini listeler (list) veya dosya arar (search). Kullanıcı 'şu dosyayı oku', 'kod yaz ve dosyaya kaydet', 'klasördekileri listele' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -586,15 +641,14 @@ TOOL_DECLARATIONS = [
                     "description": "Dosya arama ifadesi (search için)."
                 }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "clipboard_control",
-        "description": (
-            "Sistem panosunu (clipboard) okur veya panoya metin/kod kopyalar. "
-            "Kullanıcı 'panomda ne var', 'bunu panoma kopyala', 'panoyu oku' dediğinde kullan."
-        ),
+        "description": "Sistem panosunu (clipboard) okur veya panoya metin/kod kopyalar. Kullanıcı 'panomda ne var', 'bunu panoma kopyala', 'panoyu oku' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -607,15 +661,14 @@ TOOL_DECLARATIONS = [
                     "description": "Panoya kopyalanacak metin (set için)."
                 }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "fetch_webpage_content",
-        "description": (
-            "Belirtilen URL adresindeki web sayfasının veya makalenin metnini okur ve özetler. "
-            "Kullanıcı bir web linki verip 'bu sayfayı oku', 'bu makaleyi özetle', 'bu linkte ne yazıyor' dediğinde kullan."
-        ),
+        "description": "Belirtilen URL adresindeki web sayfasının veya makalenin metnini okur ve özetler. Kullanıcı bir web linki verip 'bu sayfayı oku', 'bu makaleyi özetle', 'bu linkte ne yazıyor' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -624,16 +677,14 @@ TOOL_DECLARATIONS = [
                     "description": "Okunacak web adresi (https://...)"
                 }
             },
-            "required": ["url"]
+            "required": [
+                "url"
+            ]
         }
     },
     {
         "name": "set_proactive_timer",
-        "description": (
-            "Proaktif geri sayım sayacı, alarm veya hatırlatıcı kurar. "
-            "Kullanıcı '1 dakika sonra bana hatırlat', '15 dk sonra fırını haber ver', 'yarın sabah 9'da alarm kur' "
-            "dediğinde KESİNLİKLE bu aracı kullan. Süresi bittiğinde sistem otomatik olarak kullanıcıya sesli ve ekrandan seslenecektir."
-        ),
+        "description": "Proaktif geri sayım sayacı, alarm veya hatırlatıcı kurar. Kullanıcı '1 dakika sonra bana hatırlat', '15 dk sonra fırını haber ver', 'yarın sabah 9'da alarm kur' dediğinde KESİNLİKLE bu aracı kullan. Süresi bittiğinde sistem otomatik olarak kullanıcıya sesli ve ekrandan seslenecektir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -662,7 +713,9 @@ TOOL_DECLARATIONS = [
                     "description": "True ise; süre dolduğunda sadece bildirim vermek yerine 'title' alanındaki içeriği otonom bir Ajan Görevi (Deep Research, Mail Gönderme vb.) olarak arka planda çalıştırır."
                 }
             },
-            "required": ["title"]
+            "required": [
+                "title"
+            ]
         }
     },
     {
@@ -684,15 +737,14 @@ TOOL_DECLARATIONS = [
                     "description": "İptal edilecek hatırlatıcı adı, ID'si veya 'all' / 'hepsi'"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "get_user_location",
-        "description": (
-            "Nuri Can ve Rabia'nın anlık canlı GPS konumlarını, adreslerini ve aralarındaki mesafeyi sorgular. "
-            "Kullanıcı 'ben neredeyim', 'Rabia nerede', 'Rabia'nın konumu ne', 'aramızda ne kadar mesafe var' dediğinde kullan."
-        ),
+        "description": "Nuri Can ve Rabia'nın anlık canlı GPS konumlarını, adreslerini ve aralarındaki mesafeyi sorgular. Kullanıcı 'ben neredeyim', 'Rabia nerede', 'Rabia'nın konumu ne', 'aramızda ne kadar mesafe var' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -701,43 +753,6 @@ TOOL_DECLARATIONS = [
                     "description": "'all' (ikisi birden ve mesafe) | 'Nuri Can' | 'Rabia'"
                 }
             }
-        }
-    },
-    {
-        "name": "get_unread_emails",
-        "description": (
-            "Gelen kutusundaki okunmamış e-postaları kontrol eder ve listeler. "
-            "Kullanıcı 'maillerime bak', 'yeni mail var mı', 'önemli bir e-posta geldi mi' dediğinde kullan."
-        ),
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "limit": {
-                    "type": "INTEGER",
-                    "description": "Listelenecek maksimum e-posta sayısı (varsayılan: 5)."
-                },
-                "only_important": {
-                    "type": "BOOLEAN",
-                    "description": "Sadece acil/önemli (doğrulama kodları, faturalar, banka, toplantılar) e-postaları filtrele."
-                }
-            }
-        }
-    },
-    {
-        "name": "read_email_detail",
-        "description": (
-            "Belirli bir e-postanın tam metnini ve içeriğini okur. "
-            "Kullanıcı '1. maili oku', 'şu kişiden gelen maili aç', 'mailin içeriğinde ne yazıyor' dediğinde kullan."
-        ),
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "index_or_query": {
-                    "type": "STRING",
-                    "description": "E-posta sıra numarası (örn: '1') veya konu/gönderen adı."
-                }
-            },
-            "required": ["index_or_query"]
         }
     },
     {
@@ -759,25 +774,11 @@ TOOL_DECLARATIONS = [
                     "description": "E-postanın metin içeriği."
                 }
             },
-            "required": ["to_address", "subject", "body"]
-        }
-    },
-    {
-        "name": "search_emails",
-        "description": "E-postalar arasında konu, gönderen veya anahtar kelimeye göre arama yapar.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "query": {
-                    "type": "STRING",
-                    "description": "Aranacak kelime, kişi adı veya konu (örn: 'Garanti', 'fatura', 'Trendyol', 'mülakat')."
-                },
-                "limit": {
-                    "type": "INTEGER",
-                    "description": "Maksimum sonuç sayısı (varsayılan: 5)."
-                }
-            },
-            "required": ["query"]
+            "required": [
+                "to_address",
+                "subject",
+                "body"
+            ]
         }
     },
     {
@@ -807,14 +808,34 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "move_mouse | click | double_click | right_click | scroll | drag | type_text | press_key | hotkey | paste_text | focus_window | minimize_window | maximize_window | close_window"
                 },
-                "x": {"type": "NUMBER", "description": "Fare X koordinatı (grounding_mode=true ise opsiyonel)"},
-                "y": {"type": "NUMBER", "description": "Fare Y koordinatı (grounding_mode=true ise opsiyonel)"},
-                "text": {"type": "STRING", "description": "Yazılacak veya yapıştırılacak metin"},
-                "key": {"type": "STRING", "description": "Basılacak tuş veya kısayol (örn: 'enter', 'ctrl+c', 'alt+tab', 'win+r')"},
-                "target": {"type": "STRING", "description": "Hedef pencere adı veya UI elemanı açıklaması (örn: 'Tamam butonu', 'arama kutusu')"},
-                "grounding_mode": {"type": "BOOLEAN", "description": "true ise Gemini Vision ile ekranda hedef eleman otomatik bulunur ve tıklanır — koordinat gerekmez"}
+                "x": {
+                    "type": "NUMBER",
+                    "description": "Fare X koordinatı (grounding_mode=true ise opsiyonel)"
+                },
+                "y": {
+                    "type": "NUMBER",
+                    "description": "Fare Y koordinatı (grounding_mode=true ise opsiyonel)"
+                },
+                "text": {
+                    "type": "STRING",
+                    "description": "Yazılacak veya yapıştırılacak metin"
+                },
+                "key": {
+                    "type": "STRING",
+                    "description": "Basılacak tuş veya kısayol (örn: 'enter', 'ctrl+c', 'alt+tab', 'win+r')"
+                },
+                "target": {
+                    "type": "STRING",
+                    "description": "Hedef pencere adı veya UI elemanı açıklaması (örn: 'Tamam butonu', 'arama kutusu')"
+                },
+                "grounding_mode": {
+                    "type": "BOOLEAN",
+                    "description": "true ise Gemini Vision ile ekranda hedef eleman otomatik bulunur ve tıklanır — koordinat gerekmez"
+                }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
@@ -827,10 +848,50 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "open | search | read_page | new_tab | back"
                 },
-                "url": {"type": "STRING", "description": "Açılacak veya okunacak web adresi"},
-                "query": {"type": "STRING", "description": "Arama motorunda aranacak sorgu"}
+                "url": {
+                    "type": "STRING",
+                    "description": "Açılacak veya okunacak web adresi"
+                },
+                "query": {
+                    "type": "STRING",
+                    "description": "Arama motorunda aranacak sorgu"
+                }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
+        }
+    },
+    {
+        "name": "start_swarm_project",
+        "description": "Kendi İçinde 'Yazılım Şirketi' simülasyonu başlatır. (Multi-Agent Swarm) Kullanıcı kapsamlı bir proje (örn: 'bana e-ticaret sitesi yap', 'yılan oyunu yaz') istediğinde kullan. Sistem kendi kendine Project Manager oluşturur ve görevi RESEARCHER, CODER, QA ajanlarına bölüştürüp otonom yürütür.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "project_description": {
+                    "type": "STRING",
+                    "description": "Projenin tüm kapsamını ve istenen özellikleri anlatan detaylı açıklama."
+                }
+            },
+            "required": [
+                "project_description"
+            ]
+        }
+    },
+    {
+        "name": "start_companion_mode",
+        "description": "Oyun veya film izlerken ekrana bakıp komik/eğlenceli sesli yorumlar yapan 'Arkadaş' modunu başlatır.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
+        }
+    },
+    {
+        "name": "stop_companion_mode",
+        "description": "Aktif olan 'Arkadaş' (Companion) modunu kapatır.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
         }
     },
     {
@@ -848,7 +909,9 @@ TOOL_DECLARATIONS = [
                     "description": "Çok kaynaklı araştırma modu aktif edilsin mi?"
                 }
             },
-            "required": ["task_description"]
+            "required": [
+                "task_description"
+            ]
         }
     },
     {
@@ -870,7 +933,9 @@ TOOL_DECLARATIONS = [
                     "description": "Görevin tam açıklaması veya yapılacak yazılım değişikliği"
                 }
             },
-            "required": ["task_description"]
+            "required": [
+                "task_description"
+            ]
         }
     },
     {
@@ -883,10 +948,18 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "write_file | execute_and_fix | validate_syntax"
                 },
-                "file_path": {"type": "STRING", "description": "Dosya yolu"},
-                "code_content": {"type": "STRING", "description": "Yazılacak kod içeriği"}
+                "file_path": {
+                    "type": "STRING",
+                    "description": "Dosya yolu"
+                },
+                "code_content": {
+                    "type": "STRING",
+                    "description": "Yazılacak kod içeriği"
+                }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
@@ -900,7 +973,9 @@ TOOL_DECLARATIONS = [
                     "description": "Çalıştırılacak test dosyasının yolu"
                 }
             },
-            "required": ["test_script_path"]
+            "required": [
+                "test_script_path"
+            ]
         }
     },
     {
@@ -909,8 +984,14 @@ TOOL_DECLARATIONS = [
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "code_or_diff": {"type": "STRING", "description": "İncelenecek kod veya diff metni"},
-                "is_diff": {"type": "BOOLEAN", "description": "İncelenen metin git diff mi?"}
+                "code_or_diff": {
+                    "type": "STRING",
+                    "description": "İncelenecek kod veya diff metni"
+                },
+                "is_diff": {
+                    "type": "BOOLEAN",
+                    "description": "İncelenen metin git diff mi?"
+                }
             }
         }
     },
@@ -924,19 +1005,23 @@ TOOL_DECLARATIONS = [
                     "type": "STRING",
                     "description": "create_snapshot | rollback | status | diff"
                 },
-                "snapshot_id": {"type": "STRING", "description": "Geri yüklenecek snapshot ID"},
-                "label": {"type": "STRING", "description": "Snapshot etiketi"}
+                "snapshot_id": {
+                    "type": "STRING",
+                    "description": "Geri yüklenecek snapshot ID"
+                },
+                "label": {
+                    "type": "STRING",
+                    "description": "Snapshot etiketi"
+                }
             },
-            "required": ["action"]
+            "required": [
+                "action"
+            ]
         }
     },
     {
         "name": "web_search",
-        "description": (
-            "Hızlı web araması yapar ve ilk birkaç sonucun içeriğini okur. "
-            "Güncel haberler, fiyatlar, bilgiler veya belirli bir URL'nin içeriğini okumak için kullan. "
-            "Örnek: 'yapay zeka haberleri', 'Python 3.12 yenilikleri', 'https://example.com'"
-        ),
+        "description": "Hızlı web araması yapar ve ilk birkaç sonucun içeriğini okur. Güncel haberler, fiyatlar, bilgiler veya belirli bir URL'nin içeriğini okumak için kullan. Örnek: 'yapay zeka haberleri', 'Python 3.12 yenilikleri', 'https://example.com'",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -949,16 +1034,14 @@ TOOL_DECLARATIONS = [
                     "description": "Döndürülecek maksimum karakter sayısı (varsayılan: 4000)"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     },
     {
         "name": "deep_research",
-        "description": (
-            "Kapsamlı çok kaynaklı araştırma yapar ve yapılandırılmış Markdown raporu üretir. "
-            "Kullanıcı 'araştır', 'rapor hazırla', 'detaylı incele', 'analiz et' dediğinde kullan. "
-            "Rapor otomatik olarak memory/research_reports/ dizinine kaydedilir."
-        ),
+        "description": "Kapsamlı çok kaynaklı araştırma yapar ve yapılandırılmış Markdown raporu üretir. Kullanıcı 'araştır', 'rapor hazırla', 'detaylı incele', 'analiz et' dediğinde kullan. Rapor otomatik olarak memory/research_reports/ dizinine kaydedilir.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -979,7 +1062,9 @@ TOOL_DECLARATIONS = [
                     "description": "Raporu dosyaya kaydet (varsayılan: true)"
                 }
             },
-            "required": ["query"]
+            "required": [
+                "query"
+            ]
         }
     }
 ]

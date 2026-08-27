@@ -30,9 +30,8 @@ HELPER_INFO_PLIST = HELPER_CONTENTS_DIR / "Info.plist"
 HELPER_BIN = HELPER_MACOS_DIR / "jarvis-screen-helper"
 
 VISION_MODELS = (
-    "models/gemini-flash-latest",
-    "models/gemini-2.5-flash-lite",
-    "models/gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
 )
 VISION_MAX_DIMENSION = 1800
 VISION_MAX_INLINE_BYTES = 5_500_000

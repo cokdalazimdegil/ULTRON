@@ -996,21 +996,32 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Proactive Watcher başlat
-    try:
-        from computer.proactive_watcher import proactive_watcher
-        proactive_watcher.start_watcher()
-    except Exception:
-        pass
+    loop = asyncio.get_running_loop()
+    # EventBus'a abone ol
+    from core.event_bus import bus
+    def _ui_alert_callback(text):
+        async def _send():
+            for bridge in list(web_clients):
+                try:
+                    await bridge.session.send_client_content(
+                        turns={"parts": [{"text": text}]},
+                        turn_complete=True
+                    )
+                except Exception:
+                    pass
+        asyncio.run_coroutine_threadsafe(_send(), loop)
+        
+    bus.subscribe("ui_alert", _ui_alert_callback)
+
+    # Arka plan servislerini başlat
+    from core.daemon_manager import daemon_manager
+    daemon_manager.start_all()
 
     cron_task = asyncio.create_task(_proactive_cron_worker())
     yield
     cron_task.cancel()
-    try:
-        from computer.proactive_watcher import proactive_watcher
-        proactive_watcher.stop_watcher()
-    except Exception:
-        pass
+    
+    daemon_manager.stop_all()
 
 app.router.lifespan_context = lifespan
 
