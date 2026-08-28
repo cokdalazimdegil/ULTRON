@@ -49,6 +49,32 @@ class OrchestratorEngine:
         Kullanıcı isteğini analiz eder, uzman ajanları koordine eder, yürütür ve doğrular.
         PLAN -> DELEGATE -> EXECUTE -> TEST -> REVIEW -> VERIFY -> REPORT
         """
-        from orchestrator.supervisor import supervisor_engine
-        return supervisor_engine.run_supervisor_workflow(task_description, user_name=user_name)
+        # SwarmReporter'a kaydol
+        task_id = None
+        try:
+            from core.swarm_reporter import swarm_reporter
+            task_id = swarm_reporter.register_task(
+                agent_name="Orchestrator",
+                description=task_description[:100],
+            )
+        except Exception:
+            pass
 
+        try:
+            from orchestrator.supervisor import supervisor_engine
+            result = supervisor_engine.run_supervisor_workflow(task_description, user_name=user_name)
+            if task_id:
+                try:
+                    from core.swarm_reporter import swarm_reporter
+                    swarm_reporter.complete_task(task_id, success=True, summary="Görev tamamlandı.")
+                except Exception:
+                    pass
+            return result
+        except Exception as e:
+            if task_id:
+                try:
+                    from core.swarm_reporter import swarm_reporter
+                    swarm_reporter.complete_task(task_id, success=False, summary=str(e)[:100])
+                except Exception:
+                    pass
+            raise

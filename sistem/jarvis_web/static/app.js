@@ -1847,3 +1847,93 @@ window._agentOrbHook = function(agent, status) {
   _setOrbColorForAgent(agent, status);
   if (_originalAgentEventOrbIntegration) _originalAgentEventOrbIntegration(agent, status);
 };
+
+// ── SWARM CONSOLE ────────────────────────────────────────────────────────────
+// Agent Ağı Şeffaflık Paneli: /ws/swarm üzerinden canlı görev takibi
+
+let _swarmWs = null;
+let _swarmTasks = {};  // task_id → task_data
+
+function toggleSwarmConsole() {
+  const panel = document.getElementById('swarm-console');
+  if (!panel) return;
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  if (isHidden) {
+    _connectSwarmWs();
+  }
+}
+
+function _connectSwarmWs() {
+  if (_swarmWs && _swarmWs.readyState === WebSocket.OPEN) return;
+
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${proto}//${location.host}/ws/swarm`;
+
+  _swarmWs = new WebSocket(wsUrl);
+
+  _swarmWs.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'swarm_init' || msg.type === 'swarm_update') {
+        const tasks = msg.all_tasks || [];
+        _swarmTasks = {};
+        tasks.forEach(t => { _swarmTasks[t.task_id] = t; });
+        _renderSwarmTasks();
+      }
+    } catch (e) { /* ignore */ }
+  };
+
+  _swarmWs.onerror = () => { _swarmWs = null; };
+  _swarmWs.onclose = () => { _swarmWs = null; };
+}
+
+function _renderSwarmTasks() {
+  const list = document.getElementById('swarm-task-list');
+  const badge = document.getElementById('swarm-active-count');
+  const dot = document.getElementById('swarm-dot');
+  if (!list) return;
+
+  const tasks = Object.values(_swarmTasks);
+  const activeTasks = tasks.filter(t => t.status === 'running');
+
+  // Badge güncelle
+  if (badge) {
+    badge.textContent = `${activeTasks.length} AKTİF`;
+    badge.classList.toggle('has-tasks', activeTasks.length > 0);
+  }
+  if (dot) dot.classList.toggle('hidden', activeTasks.length === 0);
+
+  if (tasks.length === 0) {
+    list.innerHTML = '<div class="swarm-empty-msg">Aktif ajan görevi yok.</div>';
+    return;
+  }
+
+  // Çalışanlarda önce göster
+  tasks.sort((a, b) => {
+    const order = { running: 0, pending: 1, success: 2, failed: 3 };
+    return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+  });
+
+  list.innerHTML = tasks.map(t => {
+    const elapsed = t.elapsed ? `${t.elapsed}s` : '';
+    const progress = t.progress || 0;
+    return `
+      <div class="swarm-task-item ${t.status}">
+        <div class="swarm-task-agent">${escapeHtml(t.agent_name)}</div>
+        <div class="swarm-task-desc" title="${escapeHtml(t.description)}">${escapeHtml(t.description)}</div>
+        <div class="swarm-progress-bar">
+          <div class="swarm-progress-fill" style="width:${progress}%"></div>
+        </div>
+        <div class="swarm-task-footer">
+          <span class="swarm-task-status ${t.status}">${t.status === 'running' ? '▶ ÇALIŞIYOR' : t.status === 'success' ? '✔ TAMAM' : t.status === 'failed' ? '✗ HATA' : '⏳ BEKLE'}</span>
+          <span class="swarm-task-elapsed">${elapsed}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Sayfa yüklenince swarm ws bağlantısını arkaplanda aç (panel kapalı olsa bile badge güncel olsun)
+window.addEventListener('load', () => {
+  setTimeout(_connectSwarmWs, 2000);
+});

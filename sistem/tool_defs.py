@@ -1066,5 +1066,29 @@ TOOL_DECLARATIONS = [
                 "query"
             ]
         }
+    },
+    {
+        "name": "draft_reply",
+        "description": "Kullanıcının yazım tarzını taklit ederek gelen bir mesaja yanıt TASLAĞI üretir. Asla otomatik göndermez — kullanıcı onayı gerektirir. WhatsApp, e-posta veya Discord mesajlarına klon yanıt taslağı hazırlar.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "original_message": {
+                    "type": "STRING",
+                    "description": "Yanıt verilecek orijinal mesaj"
+                },
+                "sender_name": {
+                    "type": "STRING",
+                    "description": "Mesajı gönderen kişinin adı"
+                },
+                "platform": {
+                    "type": "STRING",
+                    "description": "Mesajın geldiği platform (whatsapp, email, discord, genel)"
+                }
+            },
+            "required": [
+                "original_message"
+            ]
+        }
     }
 ]

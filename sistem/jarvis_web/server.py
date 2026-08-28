@@ -1013,6 +1013,47 @@ async def lifespan(app: FastAPI):
         
     bus.subscribe("ui_alert", _ui_alert_callback)
 
+    # Dream Engine etkinlik ping'i — Gemini Live'dan gelen mesajlarda çağrılır
+    def _dream_ping_on_activity(data):
+        try:
+            from memory.dream_engine import dream_engine
+            dream_engine.ping_activity()
+        except Exception:
+            pass
+    bus.subscribe("user_activity", _dream_ping_on_activity)
+
+    # Observer: kullanıcı geldiğinde proaktif karşılama
+    def _observer_presence_callback(data: dict):
+        is_present = data.get("present", False)
+        if is_present:
+            async def _greet():
+                for bridge in list(web_clients):
+                    try:
+                        await bridge.session.send_client_content(
+                            turns={"parts": [{"text": "Hoş geldiniz Nuri Can. Yokken gelen önemli bir şey var mı diye bakıyorum."}]},
+                            turn_complete=True
+                        )
+                    except Exception:
+                        pass
+            asyncio.run_coroutine_threadsafe(_greet(), loop)
+    bus.subscribe("observer_presence", _observer_presence_callback)
+
+    # Observer: ruh hali değiştiğinde sistem prompt'una ekle
+    def _observer_mood_callback(data: dict):
+        mood = data.get("mood", "")
+        if mood:
+            async def _mood_notify():
+                for bridge in list(web_clients):
+                    try:
+                        await bridge.session.send_client_content(
+                            turns={"parts": [{"text": f"[SİSTEM]: Kullanıcı şu an {mood}. Buna göre konuşma tonunu ayarla, bunu kullanıcıya söyleme."}]},
+                            turn_complete=True
+                        )
+                    except Exception:
+                        pass
+            asyncio.run_coroutine_threadsafe(_mood_notify(), loop)
+    bus.subscribe("observer_mood", _observer_mood_callback)
+
     # Arka plan servislerini başlat
     from core.daemon_manager import daemon_manager
     daemon_manager.start_all()
@@ -1024,6 +1065,47 @@ async def lifespan(app: FastAPI):
     daemon_manager.stop_all()
 
 app.router.lifespan_context = lifespan
+
+
+# ── Swarm Dashboard WebSocket Endpoint ──────────────────────────────────────
+@app.websocket("/ws/swarm")
+async def swarm_ws(ws: WebSocket):
+    """Ajan Ağı Şeffaflık Konsolu — Canlı görev durumlarını iter."""
+    await ws.accept()
+    import asyncio as _asyncio
+    from core.swarm_reporter import swarm_reporter
+
+    queue = _asyncio.Queue()
+    swarm_reporter.add_listener(queue)
+
+    try:
+        # İlk bağlantıda mevcut görev listesini gönder
+        await ws.send_text(json.dumps({
+            "type": "swarm_init",
+            "all_tasks": swarm_reporter.get_all_tasks()
+        }))
+
+        while True:
+            # Hem kuyruktan okuma hem istemci mesajı bekleme
+            done, pending = await _asyncio.wait(
+                [
+                    _asyncio.create_task(queue.get()),
+                    _asyncio.create_task(ws.receive_text()),
+                ],
+                return_when=_asyncio.FIRST_COMPLETED,
+            )
+            for task in pending:
+                task.cancel()
+            for task in done:
+                result = task.result()
+                if isinstance(result, dict):
+                    # Kuyruktan gelen güncelleme
+                    await ws.send_text(json.dumps(result))
+                # İstemciden gelen mesaj (ping vb.) — yoksay
+    except Exception:
+        pass
+    finally:
+        swarm_reporter.remove_listener(queue)
 
 
 

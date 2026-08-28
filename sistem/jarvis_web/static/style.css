@@ -1571,3 +1571,117 @@ html, body {
   from { opacity: 0; transform: translateX(-50%) translateY(20px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── SWARM CONSOLE ─────────────────────────────────────────────────────────── */
+.swarm-console {
+  position: fixed;
+  right: 16px;
+  top: 60px;
+  width: 320px;
+  max-height: 480px;
+  background: rgba(5, 0, 15, 0.92);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.1);
+  animation: fadeInSwarm 0.2s ease;
+}
+@keyframes fadeInSwarm {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.swarm-console.hidden { display: none; }
+.swarm-console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+  color: var(--cyan);
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-size: 10px;
+}
+.swarm-header-right { display: flex; align-items: center; gap: 8px; }
+.swarm-active-badge {
+  background: rgba(0, 245, 255, 0.15);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 9px;
+  color: var(--cyan);
+}
+.swarm-active-badge.has-tasks {
+  background: rgba(255, 68, 34, 0.2);
+  border-color: var(--ultron);
+  color: var(--ultron-glow);
+  animation: pulse 1.5s infinite;
+}
+.swarm-close-btn {
+  background: none; border: none; color: #555; cursor: pointer;
+  font-size: 13px; padding: 0 2px; transition: color 0.2s;
+}
+.swarm-close-btn:hover { color: var(--ultron); }
+.swarm-task-list {
+  overflow-y: auto; flex: 1; padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.swarm-empty-msg { color: #444; text-align: center; padding: 20px; font-size: 11px; }
+.swarm-task-item {
+  background: rgba(0, 245, 255, 0.04);
+  border: 1px solid rgba(0, 245, 255, 0.12);
+  border-radius: 5px;
+  padding: 7px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: border-color 0.3s;
+}
+.swarm-task-item.running  { border-color: rgba(255, 170, 48, 0.4); }
+.swarm-task-item.success  { border-color: rgba(0, 255, 136, 0.4); animation: successFlash 0.5s ease; }
+.swarm-task-item.failed   { border-color: rgba(255, 68, 34, 0.5); }
+@keyframes successFlash {
+  0%   { background: rgba(0, 255, 136, 0.15); }
+  100% { background: rgba(0, 245, 255, 0.04); }
+}
+.swarm-task-agent { color: var(--cyan); font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; }
+.swarm-task-desc  { color: #ccc; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swarm-task-footer { display: flex; justify-content: space-between; align-items: center; }
+.swarm-task-status {
+  font-size: 9px; padding: 1px 6px; border-radius: 8px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.swarm-task-status.running  { background: rgba(255,170,48,0.2); color: var(--amber); }
+.swarm-task-status.success  { background: rgba(0,255,136,0.15); color: var(--green); }
+.swarm-task-status.failed   { background: rgba(255,68,34,0.2);  color: var(--ultron-glow); }
+.swarm-task-status.pending  { background: rgba(100,100,100,0.2); color: #888; }
+.swarm-task-elapsed { color: #555; font-size: 9px; }
+.swarm-progress-bar { height: 2px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.swarm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--ultron));
+  transition: width 0.4s ease;
+}
+.btn-swarm-hud {
+  position: fixed; right: 16px; top: 16px;
+  width: 36px; height: 36px;
+  background: rgba(5, 0, 15, 0.8);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: 8px; color: var(--cyan); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; z-index: 901; transition: all 0.2s;
+}
+.btn-swarm-hud:hover {
+  background: rgba(0, 245, 255, 0.1); border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+}
+.swarm-dot {
+  position: absolute; top: -3px; right: -3px;
+  width: 8px; height: 8px;
+  background: var(--ultron); border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+.swarm-dot.hidden { display: none; }

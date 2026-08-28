@@ -537,10 +537,29 @@ def execute_tool(name: str, args: dict) -> str:
                 return get_git_diff()[:3000]
             return f"Bilinmeyen git/snapshot eylemi: {action}"
 
+        if name == "draft_reply":
+            from actions.digital_clone import generate_clone_reply, notify_pending_reply
+            draft = generate_clone_reply(
+                original_message=args.get("original_message", ""),
+                platform=args.get("platform", "genel"),
+                sender_name=args.get("sender_name", "Biri"),
+            )
+            return notify_pending_reply(draft)
+
         return f"Bilinmeyen araç: {name}"
 
     except Exception as e:
         traceback.print_exc()
+        # ── Self-Healer: ardışık hata varsa onarım başlat ────────────────────
+        try:
+            import traceback as _tb
+            tb_str = _tb.format_exc()
+            from core.self_healer import self_healer
+            repaired = self_healer.record_failure(name, str(e), tb_str)
+            if repaired:
+                return f"Hata: {e}\n🔧 Ardışık hata tespit edildi — otomatik onarım başlatıldı."
+        except Exception:
+            pass
         return f"Hata: {e}"
 
 

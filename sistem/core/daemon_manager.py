@@ -57,3 +57,26 @@ try:
     from core.proactive_agent import workspace_agent
     daemon_manager.register(workspace_agent.start, workspace_agent.stop, "Workspace Agent")
 except Exception: pass
+
+# ── ULTRON 3.0 Arka Plan Servisleri ──────────────────────────────────────────
+
+# Observer Daemon — Çevresel Farkındalık
+try:
+    from computer.observer_daemon import observer_daemon
+    daemon_manager.register(
+        observer_daemon.start,
+        observer_daemon.stop,
+        "Observer Daemon (Çevresel Farkındalık)"
+    )
+except Exception: pass
+
+# Dream Engine — Bellek Konsolidasyonu
+try:
+    from memory.dream_engine import dream_engine
+    daemon_manager.register(
+        dream_engine.start,
+        dream_engine.stop,
+        "Dream Engine (Bellek Konsolidasyonu)"
+    )
+except Exception: pass
+
