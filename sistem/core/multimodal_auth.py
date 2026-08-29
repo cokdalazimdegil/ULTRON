@@ -29,7 +29,7 @@ class SecurityTier(int, Enum):
 
 @dataclass
 class MultimodalAuthDecision:
-    user_name: str = "Nuri Can"
+    user_name: str = "YARATICI"
     status: AuthStatus = AuthStatus.VERIFIED
     fused_score: float = 1.0
     voice_score: float = 1.0
@@ -72,7 +72,7 @@ class MultimodalAuthEngine:
 
     def __init__(self):
         self._lock = threading.RLock()
-        self._current_user = "Nuri Can"
+        self._current_user = "YARATICI"
         self._last_decision: MultimodalAuthDecision = MultimodalAuthDecision(
             user_name=self._current_user,
             status=AuthStatus.VERIFIED,
@@ -93,7 +93,7 @@ class MultimodalAuthEngine:
 
     def set_active_user(self, user: str) -> None:
         with self._lock:
-            self._current_user = user or "Nuri Can"
+            self._current_user = user or "YARATICI"
             self._last_decision = MultimodalAuthDecision(
                 user_name=self._current_user,
                 status=AuthStatus.VERIFIED,

@@ -76,7 +76,7 @@ class SupervisorEngine:
     def __init__(self):
         self._lock = threading.RLock()
 
-    def run_supervisor_workflow(self, task_description: str, user_name: str = "Nuri Can") -> dict[str, Any]:
+    def run_supervisor_workflow(self, task_description: str, user_name: str = "YARATICI") -> dict[str, Any]:
         """
         Araştırma, Kodlama, Test ve İnceleme ajanlarını koordine ederek görevi tamamlar.
         """

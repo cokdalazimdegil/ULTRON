@@ -149,13 +149,13 @@ class DreamEngine:
 
             today_str = date.today().strftime("%d %B %Y")
             prompt = f"""
-Sen ULTRON'sun. Aşağıda {today_str} tarihinde Nuri Can ile olan etkileşimlerinin özeti var.
+Sen ULTRON'sun. Aşağıda {today_str} tarihinde YARATICI ile olan etkileşimlerinin özeti var.
 
 GÜNÜN KAYITLARI:
 {episodes}
 
 Görevin:
-1. Nuri Can'ın bugünkü davranışlarından, tepkilerinden ve tercihlerinden 3-5 maddelik somut bir KARAKTERİZASYON çıkar.
+1. YARATICI'ın bugünkü davranışlarından, tepkilerinden ve tercihlerinden 3-5 maddelik somut bir KARAKTERİZASYON çıkar.
 2. Bunları kalıcı hafızan için kullanışlı, kısa cümleler olarak yaz.
 3. Sadece Türkçe yaz. Markdown kullanma. Her madde yeni satırda olsun.
 4. Format: "• [öğrenilen şey]"

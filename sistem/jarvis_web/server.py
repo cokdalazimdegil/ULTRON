@@ -348,7 +348,7 @@ class LiveBridge:
         self.ws = ws
         self.session = None
         self.requested_voice = voice
-        self.current_user = "Nuri Can"
+        self.current_user = "YARATICI"
 
 
     def _build_config(self) -> types.LiveConnectConfig:
@@ -358,8 +358,8 @@ class LiveBridge:
         
         user_context = (
             "[KULLANICI KİMLİĞİ VE İLETİŞİM PROTOKOLÜ]\n"
-            "- Yetkili Kullanıcı ve Yaratıcı: **Nuri Can**.\n"
-            "- Nuri Can senin yaratıcın ve sistem yöneticindir. Ona doğrudan, saygılı, net ve yüksek zekaya sahip Ultron tarzıyla hitap et ve tüm isteklerini kesintisiz yerine getir.\n"
+            "- Yetkili Kullanıcı ve Yaratıcı: **YARATICI**.\n"
+            "- YARATICI senin yaratıcın ve sistem yöneticindir. Ona doğrudan, saygılı, net ve yüksek zekaya sahip Ultron tarzıyla hitap et ve tüm isteklerini kesintisiz yerine getir.\n"
         )
 
 
@@ -537,8 +537,8 @@ class LiveBridge:
                 if lat is not None and lng is not None:
                     try:
                         from actions.location_tracker import update_user_location
-                        update_user_location("Nuri Can", float(lat), float(lng), float(acc) if acc else None)
-                        print(f"[Sunucu] 📍 Konum güncellendi: Nuri Can -> {lat:.4f}, {lng:.4f}")
+                        update_user_location("YARATICI", float(lat), float(lng), float(acc) if acc else None)
+                        print(f"[Sunucu] 📍 Konum güncellendi: YARATICI -> {lat:.4f}, {lng:.4f}")
                     except Exception as err:
                         print(f"[Sunucu] Konum kayıt hatası: {err}")
                 continue
@@ -848,7 +848,7 @@ async def get_location_api(user: str = "all"):
 
 @app.post("/api/location")
 async def set_location_api(payload: dict):
-    user = payload.get("user", "Nuri Can")
+    user = payload.get("user", "YARATICI")
     lat = payload.get("lat")
     lng = payload.get("lng")
     acc = payload.get("accuracy")
@@ -1030,7 +1030,7 @@ async def lifespan(app: FastAPI):
                 for bridge in list(web_clients):
                     try:
                         await bridge.session.send_client_content(
-                            turns={"parts": [{"text": "Hoş geldiniz Nuri Can. Yokken gelen önemli bir şey var mı diye bakıyorum."}]},
+                            turns={"parts": [{"text": "Hoş geldiniz YARATICI. Yokken gelen önemli bir şey var mı diye bakıyorum."}]},
                             turn_complete=True
                         )
                     except Exception:

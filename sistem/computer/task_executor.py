@@ -43,7 +43,7 @@ class TaskStep:
 class AutonomousTask:
     task_id: str
     description: str
-    owner: str = "Nuri Can"
+    owner: str = "YARATICI"
     status: str = "PENDING"  # PENDING, PLANNING, RUNNING, VERIFYING, COMPLETED, FAILED, CANCELLED
     steps: list[TaskStep] = field(default_factory=list)
     progress_message: str = ""
@@ -107,7 +107,7 @@ class TaskEngine:
     """Otonom görevleri planlayan, yürüten ve doğrulayan motor."""
 
     @classmethod
-    def create_task(cls, description: str, owner: str = "Nuri Can") -> AutonomousTask:
+    def create_task(cls, description: str, owner: str = "YARATICI") -> AutonomousTask:
         task_id = generate_task_id()
         task = AutonomousTask(task_id=task_id, description=description, owner=owner)
         with _task_lock:
@@ -242,7 +242,7 @@ class TaskEngine:
             return task.completion_report
 
     @classmethod
-    def run_task_in_background(cls, description: str, owner: str = "Nuri Can", on_complete: Callable[[str], None] | None = None) -> str:
+    def run_task_in_background(cls, description: str, owner: str = "YARATICI", on_complete: Callable[[str], None] | None = None) -> str:
         """Görevi arka plan iş parçacığında çalıştırır ve Task ID döner."""
         task = cls.create_task(description, owner=owner)
 

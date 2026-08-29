@@ -70,14 +70,14 @@ def generate_clone_reply(
         from orchestrator.gemini_reasoning import query_gemini_reasoning
 
         prompt = f"""
-Sen ULTRON'sun. Kullanıcı Nuri Can şu anda meşgul.
+Sen ULTRON'sun. Kullanıcı YARATICI şu anda meşgul.
 {sender_name} adlı kişi {platform} üzerinden şu mesajı gönderdi:
 
 "{original_message}"
 
 {style_prompt}
 
-Görevin: Nuri Can'ın YAZIM TARZIYLA (aynı kısaltmalar, aynı enerji, aynı Türkçe/İngilizce karışım oranı) bu mesaja kısa ve doğal bir yanıt taslağı yaz.
+Görevin: YARATICI'ın YAZIM TARZIYLA (aynı kısaltmalar, aynı enerji, aynı Türkçe/İngilizce karışım oranı) bu mesaja kısa ve doğal bir yanıt taslağı yaz.
 - Sadece taslak yanıtı yaz, açıklama veya giriş/çıkış cümlesi EKLEME.
 - Taslak 1-3 cümleyi geçmesin.
 - Yanıt samimi ve özgün olsun, robot gibi değil.

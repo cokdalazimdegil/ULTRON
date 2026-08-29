@@ -1,7 +1,7 @@
 """
 ULTRON — Canlı Konum Takip Modülü
 ─────────────────────────────────
-Nuri Can ve Rabia'nın canlı konumlarını kaydeder, aralarındaki mesafeyi
+YARATICI ve AILE_UYESI'nın canlı konumlarını kaydeder, aralarındaki mesafeyi
 hesaplar ve Gemini asistanına coğrafi bilgi sağlar.
 """
 
@@ -27,8 +27,8 @@ def _load_locations() -> dict:
     except Exception:
         pass
     return {
-        "Nuri Can": {"lat": None, "lng": None, "accuracy": None, "address": "Bilinmiyor", "updated_at": 0},
-        "Rabia": {"lat": None, "lng": None, "accuracy": None, "address": "Bilinmiyor", "updated_at": 0}
+        "YARATICI": {"lat": None, "lng": None, "accuracy": None, "address": "Bilinmiyor", "updated_at": 0},
+        "AILE_UYESI": {"lat": None, "lng": None, "accuracy": None, "address": "Bilinmiyor", "updated_at": 0}
     }
 
 
@@ -66,7 +66,7 @@ def reverse_geocode(lat: float, lng: float) -> str:
 def update_user_location(user_name: str, lat: float, lng: float, accuracy: float = None) -> dict:
     """Kullanıcının canlı konumunu günceller."""
     data = _load_locations()
-    norm_name = "Rabia" if "rabia" in user_name.lower() else "Nuri Can"
+    norm_name = "AILE_UYESI" if "rabia" in user_name.lower() else "YARATICI"
     
     address = reverse_geocode(lat, lng)
     
@@ -96,12 +96,12 @@ def _haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -
 
 def get_user_location(user_name: str = "all") -> str:
     """
-    Nuri Can ve Rabia'nın konum bilgilerini ve aralarındaki mesafeyi özetler.
-    user_name: 'all', 'Nuri Can', 'Rabia'
+    YARATICI ve AILE_UYESI'nın konum bilgilerini ve aralarındaki mesafeyi özetler.
+    user_name: 'all', 'YARATICI', 'AILE_UYESI'
     """
     data = _load_locations()
-    nuri = data.get("Nuri Can", {})
-    rabia = data.get("Rabia", {})
+    nuri = data.get("YARATICI", {})
+    rabia = data.get("AILE_UYESI", {})
 
     def format_user(name: str, u: dict) -> str:
         if not u or u.get("lat") is None:
@@ -115,20 +115,20 @@ def get_user_location(user_name: str = "all") -> str:
     norm = (user_name or "all").lower()
     
     if "nuri" in norm:
-        return format_user("Nuri Can", nuri)
+        return format_user("YARATICI", nuri)
     if "rabia" in norm:
-        return format_user("Rabia", rabia)
+        return format_user("AILE_UYESI", rabia)
 
     # İkisi birden
     lines = [
-        format_user("Nuri Can", nuri),
-        format_user("Rabia", rabia)
+        format_user("YARATICI", nuri),
+        format_user("AILE_UYESI", rabia)
     ]
 
     if nuri.get("lat") is not None and rabia.get("lat") is not None:
         dist_km = _haversine_distance_km(nuri["lat"], nuri["lng"], rabia["lat"], rabia["lng"])
         if dist_km < 0.1:
-            lines.append("💑 Nuri Can ve Rabia şu anda yan yana (aynı konumdalar).")
+            lines.append("💑 YARATICI ve AILE_UYESI şu anda yan yana (aynı konumdalar).")
         elif dist_km < 1.0:
             lines.append(f"📏 Aralarındaki mesafe: Yaklaşık {int(dist_km * 1000)} metre.")
         else:

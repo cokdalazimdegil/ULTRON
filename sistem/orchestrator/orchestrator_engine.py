@@ -44,7 +44,7 @@ class OrchestratorEngine:
         return "SIMPLE"
 
     @classmethod
-    def orchestrate_task(cls, task_description: str, user_name: str = "Nuri Can") -> dict[str, Any]:
+    def orchestrate_task(cls, task_description: str, user_name: str = "YARATICI") -> dict[str, Any]:
         """
         Kullanıcı isteğini analiz eder, uzman ajanları koordine eder, yürütür ve doğrular.
         PLAN -> DELEGATE -> EXECUTE -> TEST -> REVIEW -> VERIFY -> REPORT

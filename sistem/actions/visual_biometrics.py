@@ -25,14 +25,14 @@ logger = logging.getLogger("ultron.visual_biometrics")
 
 REGISTERED_VISUAL_PROFILES: dict[str, dict[str, Any]] = {
     "nuri_can": {
-        "display_name": "Nuri Can",
+        "display_name": "YARATICI",
         "role": "Yönetici & Yaratıcı",
         "expected_face_ratio": 1.35,
         "active_confidence_boost": 0.88,
     },
     "rabia": {
-        "display_name": "Rabia",
-        "role": "Nuri Can'ın Eşi",
+        "display_name": "AILE_UYESI",
+        "role": "YARATICI'ın Eşi",
         "expected_face_ratio": 1.40,
         "active_confidence_boost": 0.86,
     }
@@ -155,7 +155,7 @@ class VisualBiometricsEngine:
             best_user = "Bilinmeyen"
             best_conf = 0.0
             if face_found and is_live:
-                best_user = active_hint_user or "Nuri Can"
+                best_user = active_hint_user or "YARATICI"
                 best_conf = scores.get(best_user.lower().replace(" ", "_"), 0.85)
 
             report = VisualBiometricsReport(

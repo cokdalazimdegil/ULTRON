@@ -30,7 +30,7 @@ class UncertaintyLevel(str, Enum):
 
 @dataclass
 class UserEntity:
-    name: str = "Nuri Can"
+    name: str = "YARATICI"
     role: str = "Yaratıcı & Sistem Yöneticisi"
     is_authenticated: bool = True
     active_location: dict[str, Any] = field(default_factory=dict)
@@ -79,7 +79,7 @@ class SystemMetricsEntity:
 class ActiveTaskContext:
     task_id: str | None = None
     goal: str = ""
-    owner: str = "Nuri Can"
+    owner: str = "YARATICI"
     status: str = "IDLE"  # IDLE, PLANNING, RUNNING, VERIFYING, COMPLETED, FAILED
     active_subtask_id: str | None = None
     assigned_agent: str | None = None

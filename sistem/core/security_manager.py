@@ -40,7 +40,7 @@ class RiskLevel(str, Enum):
 class AuthorizationRequest:
     action_name: str
     target: str = ""
-    actor: str = "Nuri Can"
+    actor: str = "YARATICI"
     is_authenticated: bool = True
     params: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
@@ -124,7 +124,7 @@ class CentralSecurityEngine:
 
 
     def authorize(self, req_or_action: AuthorizationRequest | str, params: dict[str, Any] | None = None,
-                  target: str = "", user: str = "Nuri Can", is_authenticated: bool = True) -> AuthorizationDecision:
+                  target: str = "", user: str = "YARATICI", is_authenticated: bool = True) -> AuthorizationDecision:
         """
         Merkezi yetkilendirme kararı üretir.
         FAIL-CLOSED Kuralı: İstisna durumunda ASLA izin vermez.

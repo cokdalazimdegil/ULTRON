@@ -99,7 +99,7 @@ class HierarchicalComputerController:
         self.vision_provider = VisionInteractionProvider()
 
     def execute_click(self, target_description: str, fallback_coords: tuple[int, int] | None = None,
-                      user: str = "Nuri Can") -> UIActionResult:
+                      user: str = "YARATICI") -> UIActionResult:
         """
         Öncelikli tıklama akışı:
         1. UIA Nesne Tespiti
@@ -154,7 +154,7 @@ class HierarchicalComputerController:
         )
 
 
-    def execute_typing(self, text: str, user: str = "Nuri Can") -> UIActionResult:
+    def execute_typing(self, text: str, user: str = "YARATICI") -> UIActionResult:
         auth = security_engine.authorize("type_text", {"text_len": len(text)}, user=user)
         if not auth.allowed:
             return UIActionResult(success=False, provider_used="SECURITY_GATE", target="keyboard", verification_passed=False, error=auth.reason)

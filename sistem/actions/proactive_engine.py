@@ -39,7 +39,7 @@ def set_proactive_timer(
     minutes: float = 0,
     seconds: float = 0,
     due_iso: str = "",
-    user: str = "Nuri Can",
+    user: str = "YARATICI",
     is_task: bool = False,
 ) -> str:
     """
@@ -85,7 +85,7 @@ def set_proactive_timer(
     timer_item = {
         "id": timer_id,
         "title": title.strip(),
-        "user": user or "Nuri Can",
+        "user": user or "YARATICI",
         "created_at": now,
         "due_ts": due_ts,
         "due_time_str": due_time_str,

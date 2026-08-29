@@ -313,7 +313,7 @@ def execute_tool(name: str, args: dict) -> str:
                 float(args.get("minutes", 0) or 0),
                 float(args.get("seconds", 0) or 0),
                 args.get("due_iso", ""),
-                args.get("user", "Nuri Can"),
+                args.get("user", "YARATICI"),
                 bool(args.get("is_task", False)),
             ) or "Hatırlatıcı ayarlandı."
 
@@ -473,7 +473,7 @@ def execute_tool(name: str, args: dict) -> str:
                     from computer.research_engine import execute_research_plan
                     execute_research_plan(desc)
                 else:
-                    task = TaskEngine.create_task(desc, owner="Nuri Can")
+                    task = TaskEngine.create_task(desc, owner="YARATICI")
                     TaskEngine.execute_task_sync(task)
                     
             threading.Thread(target=_run_autonomous, daemon=True).start()
@@ -491,7 +491,7 @@ def execute_tool(name: str, args: dict) -> str:
             
             def _run_orchestration():
                 from orchestrator.orchestrator_engine import OrchestratorEngine
-                OrchestratorEngine.orchestrate_task(desc, user_name="Nuri Can")
+                OrchestratorEngine.orchestrate_task(desc, user_name="YARATICI")
                 
             threading.Thread(target=_run_orchestration, daemon=True).start()
             return "Orkestrasyon arka planda başlatıldı. Geliştirme, test ve analiz işlemleri bittiğinde bilgi verilecek."

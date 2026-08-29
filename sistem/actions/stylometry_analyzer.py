@@ -86,7 +86,7 @@ def extract_turkish_stems(words: list[str]) -> list[str]:
 # Sabit Temel Üslup İmzaları
 BASE_STYLE_PROFILES: dict[str, dict[str, Any]] = {
     "nuri_can": {
-        "display_name": "Nuri Can",
+        "display_name": "YARATICI",
         "role": "Yönetici & Yaratıcı (Root)",
         "roots": {
             "kod", "yazilim", "yazılım", "terminal", "commit", "git", "sunucu", "port",
@@ -110,8 +110,8 @@ BASE_STYLE_PROFILES: dict[str, dict[str, Any]] = {
         "technical_weight": 0.90,
     },
     "rabia": {
-        "display_name": "Rabia",
-        "role": "Nuri Can'ın Eşi (Yetkili Aile)",
+        "display_name": "AILE_UYESI",
+        "role": "YARATICI'ın Eşi (Yetkili Aile)",
         "roots": {
             "gunaydin", "günaydın", "merhaba", "nasilsin", "nasılsın", "iyi aksamlar", "iyi akşamlar",
             "tesekkur", "teşekkür", "rica", "bakar misin", "bakar mısın", "yardim", "yardım",

@@ -641,7 +641,7 @@ function clearActiveAgentChips() {
 }
 
 function setIdentifiedSpeaker(userName, meta = {}) {
-  S.currentUser = "Nuri Can";
+  S.currentUser = "YARATICI";
   if (currentUserDisplay) currentUserDisplay.textContent = S.currentUser;
 }
 
@@ -1936,4 +1936,4 @@ function _renderSwarmTasks() {
 // Sayfa yüklenince swarm ws bağlantısını arkaplanda aç (panel kapalı olsa bile badge güncel olsun)
 window.addEventListener('load', () => {
   setTimeout(_connectSwarmWs, 2000);
-});
+});

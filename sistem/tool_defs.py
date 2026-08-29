@@ -706,7 +706,7 @@ TOOL_DECLARATIONS = [
                 },
                 "user": {
                     "type": "STRING",
-                    "description": "Hatırlatıcının kurulduğu kişi: 'Nuri Can' veya 'Rabia'."
+                    "description": "Hatırlatıcının kurulduğu kişi: 'YARATICI' veya 'AILE_UYESI'."
                 },
                 "is_task": {
                     "type": "BOOLEAN",
@@ -744,13 +744,13 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "get_user_location",
-        "description": "Nuri Can ve Rabia'nın anlık canlı GPS konumlarını, adreslerini ve aralarındaki mesafeyi sorgular. Kullanıcı 'ben neredeyim', 'Rabia nerede', 'Rabia'nın konumu ne', 'aramızda ne kadar mesafe var' dediğinde kullan.",
+        "description": "YARATICI ve AILE_UYESI'nın anlık canlı GPS konumlarını, adreslerini ve aralarındaki mesafeyi sorgular. Kullanıcı 'ben neredeyim', 'AILE_UYESI nerede', 'AILE_UYESI'nın konumu ne', 'aramızda ne kadar mesafe var' dediğinde kullan.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "user_name": {
                     "type": "STRING",
-                    "description": "'all' (ikisi birden ve mesafe) | 'Nuri Can' | 'Rabia'"
+                    "description": "'all' (ikisi birden ve mesafe) | 'YARATICI' | 'AILE_UYESI'"
                 }
             }
         }

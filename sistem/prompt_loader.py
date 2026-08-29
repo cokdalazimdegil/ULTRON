@@ -155,7 +155,7 @@ def load_system_prompt() -> str:
         user_section = (
             "\n\n[KULLANICI PROFİLİ — Bu bilgileri zaten biliyorsun, tekrar sorma]\n"
             + user_md.replace("# ULTRON — Kullanıcı Profili (User File)\n", "")
-               .replace("> Bu dosya Nuri Can hakkında bilinen her şeyi içerir.\n"
+               .replace("> Bu dosya YARATICI hakkında bilinen her şeyi içerir.\n"
                         "> memory_manager.py'deki update_memory() çağrıldığında otomatik güncellenir.\n"
                         "> prompt_loader.py bu dosyayı sistem prompt'una birleştirir.\n", "")
         )
