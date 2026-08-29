@@ -8,6 +8,7 @@ ULTRON Orchestrator — Gemini 2.5 Pro Hybrid Reasoning Engine
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
 import time
@@ -66,6 +67,8 @@ def query_gemini_reasoning(
     model_tier: str = "pro",
     temperature: float = 0.2,
     max_output_tokens: Optional[int] = None,
+    image_base64: Optional[str] = None,
+    image_mime: str = "image/jpeg",
 ) -> str:
     """
     Belirtilen prompt için Gemini Pro veya Flash akıl yürütme motorunu çağırır.
@@ -76,6 +79,8 @@ def query_gemini_reasoning(
         model_tier: 'pro' (gemini-2.5-pro öncelikli) veya 'flash'.
         temperature: Üretim sıcaklığı (kod/mantık için düşük tutulur: 0.2).
         max_output_tokens: Maksimum çıktı token sayısı.
+        image_base64: Opsiyonel base64 formatında görsel verisi.
+        image_mime: Görselin MIME tipi (örn: image/jpeg).
         
     Returns:
         Üretilen yanıt metni.
@@ -99,12 +104,19 @@ def query_gemini_reasoning(
 
     config = types.GenerateContentConfig(**config_kwargs)
 
+    contents: list[Any] = [prompt]
+    if image_base64:
+        image_bytes = base64.b64decode(image_base64)
+        contents.append(
+            types.Part.from_bytes(data=image_bytes, mime_type=image_mime)
+        )
+
     for model_name in models_to_try:
         for attempt, delay in enumerate(retry_delays, start=1):
             try:
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=prompt,
+                    contents=contents,
                     config=config,
                 )
                 extracted = _extract_text(response)

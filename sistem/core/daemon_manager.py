@@ -94,15 +94,12 @@ except Exception: pass
 
 # Desktop HUD — Şeffaf Masaüstü Arayüzü (sadece masaüstü/ajan modunda)
 try:
-    import sys as _sys
-    _is_server = any("server" in str(arg) for arg in _sys.argv)
-    if not _is_server:
-        from computer.desktop_hud import desktop_hud
-        daemon_manager.register(
-            desktop_hud.start,
-            desktop_hud.stop,
-            "Desktop HUD (Şeffaf Masaüstü Arayüzü)"
-        )
+    from computer.desktop_hud import desktop_hud
+    daemon_manager.register(
+        desktop_hud.start,
+        desktop_hud.stop,
+        "Desktop HUD (Şeffaf Masaüstü Arayüzü)"
+    )
 except Exception: pass
 
 

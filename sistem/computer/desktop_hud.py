@@ -67,18 +67,31 @@ class DesktopHUD:
         return "ws://localhost:8765"
 
     def start(self):
-        """HUD'u arka planda başlatır (daemon thread)."""
-        t = threading.Thread(target=self._run_tk, name="DesktopHUD", daemon=True)
-        t.start()
-        # Hotkey kaydını ayrı thread'de dene
-        threading.Thread(target=self._register_hotkey, daemon=True).start()
-        logger.info("[DesktopHUD] 🖥️ Masaüstü HUD başlatıldı.")
+        """HUD'u ayrı bir işlem (subprocess) olarak başlatır."""
+        import sys
+        import subprocess
+        from pathlib import Path
+        
+        script_path = Path(__file__).resolve()
+        
+        # Sadece ana süreçten çağrıldığında alt süreç başlat (sonsuz döngüyü önle)
+        if not hasattr(sys, "frozen") and __name__ != "__main__":
+            try:
+                self._process = subprocess.Popen(
+                    [sys.executable, str(script_path)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                )
+                logger.info("[DesktopHUD] 🖥️ Masaüstü HUD başlatıldı (Subprocess).")
+            except Exception as exc:
+                logger.error(f"[DesktopHUD] Subprocess başlatma hatası: {exc}")
 
     def stop(self):
-        """HUD'u kapatır."""
+        """HUD sürecini sonlandırır."""
         try:
-            if self._root:
-                self._root.quit()
+            if hasattr(self, "_process") and self._process:
+                self._process.terminate()
         except Exception:
             pass
 
@@ -314,3 +327,11 @@ class DesktopHUD:
 
 # Global singleton
 desktop_hud = DesktopHUD()
+
+
+if __name__ == "__main__":
+    # Konfigürasyon ve loglama ayarları alt süreç için
+    logging.basicConfig(level=logging.INFO)
+    import threading
+    threading.Thread(target=desktop_hud._register_hotkey, daemon=True).start()
+    desktop_hud._run_tk()
