@@ -687,9 +687,9 @@ html, body {
   .badges {
     display: none !important;
   }
-  /* Metin Girişini Kaldır ve Alt Kontrol Panelini Yüzen Kapsül Yap */
+  /* Mobilde metin girişini kaldırıyorduk, iptal edildi */
   #text-form {
-    display: none !important;
+    display: flex !important;
   }
   #build-stamp {
     display: none !important;

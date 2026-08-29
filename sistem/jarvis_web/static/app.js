@@ -1854,7 +1854,7 @@ window._agentOrbHook = function(agent, status) {
 let _swarmWs = null;
 let _swarmTasks = {};  // task_id → task_data
 
-function toggleSwarmConsole() {
+window.toggleSwarmConsole = function() {
   const panel = document.getElementById('swarm-console');
   if (!panel) return;
   const isHidden = panel.classList.contains('hidden');
@@ -1862,7 +1862,7 @@ function toggleSwarmConsole() {
   if (isHidden) {
     _connectSwarmWs();
   }
-}
+};
 
 function _connectSwarmWs() {
   if (_swarmWs && _swarmWs.readyState === WebSocket.OPEN) return;
