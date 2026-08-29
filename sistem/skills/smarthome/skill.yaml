@@ -1,0 +1,16 @@
+name: control_home_device
+description: "Akıllı ev cihazlarını (Home Assistant) kontrol eder: ışıklar, prizler, klimalar. entity_id 'light.salon', 'switch.priz1' gibi formatlar kullanılır."
+
+parameters:
+  entity_id:
+    type: STRING
+    description: "Home Assistant entity ID (örn: light.salon, switch.tv_prizi)"
+    required: true
+  action:
+    type: STRING
+    description: "Eylem: turn_on, turn_off, toggle, set_brightness (0-255), set_temperature"
+    required: true
+  value:
+    type: STRING
+    description: "Eylem için değer (brightness veya temperature için gerekli)"
+    required: false

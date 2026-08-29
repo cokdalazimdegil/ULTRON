@@ -57,6 +57,15 @@ RECONNECT_DELAY = 3.0
 def execute_tool(name: str, args: dict) -> str:
     """Masaüstü main.py'deki araç dağıtımının ajan kopyası (UI'sız)."""
     try:
+        # ── Skill Router: önce dinamik skill sistemine sor ───────────────────
+        try:
+            from skills import execute_skill
+            skill_result = execute_skill(name, args)
+            if skill_result is not None:
+                return skill_result
+        except Exception:
+            pass  # Skill sistemi çalışmıyorsa mevcut if-elif zincirine devam
+
         if name == "open_app":
             return open_app(args.get("app_name", "")) or \
                    f"{args.get('app_name')} açıldı."

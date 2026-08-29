@@ -1,0 +1,8 @@
+name: get_weather
+description: "Anlık ve detaylı hava durumunu özetler. Şehir belirtilmezse kullanıcının konumuna göre alır."
+
+parameters:
+  location:
+    type: STRING
+    description: "Şehir adı veya koordinat. Boş bırakılırsa otomatik konum kullanılır."
+    required: false

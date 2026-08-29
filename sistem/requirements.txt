@@ -36,3 +36,9 @@ pywinauto>=0.6.8; sys_platform == "win32"
 telethon
 py-tgcalls
 pydub
+
+# ── ULTRON 4.0 Yeni Bağımlılıklar ────────────────────────────────────────────
+keyboard>=0.13.5          # Desktop HUD global hotkey (Alt+Space)
+mss>=9.0.0                # Semantic Desktop ekran yakalama (cross-platform)
+pyyaml>=6.0.1             # Skill loader YAML okuma
+

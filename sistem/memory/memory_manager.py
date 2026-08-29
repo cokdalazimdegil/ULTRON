@@ -48,6 +48,12 @@ def update_memory(data: dict):
     except Exception:
         pass
 
+    # user.md güncelleme kancası (identity ve preferences için)
+    try:
+        _update_user_md(data)
+    except Exception:
+        pass
+
 
 def _write_memory(mem: dict):
     MEMORY_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +67,47 @@ def _deep_merge(base: dict, update: dict):
             _deep_merge(base[k], v)
         else:
             base[k] = v
+
+
+def _update_user_md(data: dict):
+    """
+    Önemli identity/preferences bilgileri user.md'ye yansıtır.
+    data_path("persona", "user.md") kullanılır (dinamik, yazılabilir kopya).
+    """
+    import time as _time
+
+    user_relevant_cats = {"identity", "preferences", "family"}
+    relevant = {k: v for k, v in data.items() if k in user_relevant_cats}
+    if not relevant:
+        return
+
+    try:
+        from app_paths import data_path
+        user_md_path = data_path("persona", "user.md")
+
+        # Mevcut dosyayı oku (yoksa şablon persona/user.md'den kopyala)
+        if not user_md_path.exists():
+            from app_paths import resource_path
+            src = resource_path("core", "persona", "user.md")
+            if src.exists():
+                user_md_path.parent.mkdir(parents=True, exist_ok=True)
+                user_md_path.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+
+        lines = user_md_path.read_text(encoding="utf-8").splitlines() if user_md_path.exists() else []
+
+        # Güncellemeleri belge sonuna yaz
+        lines.append(f"\n## Otomatik Güncelleme — {_time.strftime('%Y-%m-%d %H:%M')}")
+        for cat, bucket in relevant.items():
+            if isinstance(bucket, dict):
+                for k, v in bucket.items():
+                    val = v.get("value", v) if isinstance(v, dict) else v
+                    lines.append(f"- **{cat}/{k}:** {val}")
+            else:
+                lines.append(f"- **{cat}:** {bucket}")
+
+        user_md_path.write_text("\n".join(lines), encoding="utf-8")
+    except Exception:
+        pass
 
 
 def _normalize_text(text: str) -> str:

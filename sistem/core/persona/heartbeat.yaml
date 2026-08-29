@@ -1,0 +1,49 @@
+# ULTRON Heartbeat Configuration
+# Bu dosya daemon_manager.py tarafından okunur.
+# Hangi servislerin ne sıklıkla çalışacağını tanımlar.
+
+daemons:
+  proactive_watcher:
+    enabled: true
+    description: "Ekran ve hata gözlemcisi"
+
+  cyber_dog:
+    enabled: true
+    description: "Güvenlik tarama daemon'u"
+    patrol_interval_sec: 30
+
+  workspace_agent:
+    enabled: true
+    description: "Google Workspace (Gmail/Takvim) izleyici"
+    check_interval_sec: 300  # 5 dakika
+
+  observer_daemon:
+    enabled: true
+    description: "Webcam varlık ve ruh hali analizi"
+    patrol_interval_sec: 30
+    mood_analysis_interval_sec: 120
+
+  dream_engine:
+    enabled: true
+    description: "Gece bellek konsolidasyonu"
+    check_interval_sec: 300
+    night_hours: [2, 4]           # Gece 02:00-04:00 arası tetiklenir
+    inactivity_threshold_min: 30  # 30 dk hareketsizlikte tetiklenir
+
+  semantic_desktop:
+    enabled: true
+    description: "Ekran belleği ve OCR"
+    capture_interval_sec: 300     # 5 dakikada bir
+    retention_days: 7             # 7 günden eski kayıtlar silinir
+
+  desktop_hud:
+    enabled: true
+    description: "Şeffaf masaüstü komut arayüzü"
+    hotkey: "alt+space"
+
+# Sistem geneli ayarlar
+settings:
+  max_parallel_agents: 4
+  tool_timeout_sec: 60
+  memory_max_entries: 500
+  log_level: "INFO"

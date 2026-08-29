@@ -170,11 +170,12 @@ Sadece bu formatla yanıt ver, giriş/çıkış cümlesi ekleme.
             return None
 
     def _store_insight(self, insight: str):
-        """Meta içgörüyü SEMANTIC_MEMORY'e yazar."""
+        """Meta içgörüyü SEMANTIC_MEMORY'e ve soul.md Dream Log'a yazar."""
+        today = date.today().isoformat()
+
+        # 1. Memory 2.0'a kaydet
         try:
             from memory.memory_2 import intelligent_memory, MemoryTier
-
-            today = date.today().isoformat()
             key = f"meta_insight_{today}"
             intelligent_memory.store(
                 tier=MemoryTier.SEMANTIC_MEMORY,
@@ -186,6 +187,25 @@ Sadece bu formatla yanıt ver, giriş/çıkış cümlesi ekleme.
         except Exception as exc:
             logger.error(f"[DreamEngine] Kayıt hatası: {exc}")
 
+        # 2. soul.md Dream Log bölümüne ekle
+        try:
+            from app_paths import resource_path
+            soul_path = resource_path("core", "persona", "soul.md")
+            if soul_path.exists():
+                soul_text = soul_path.read_text(encoding="utf-8")
+                log_entry = f"\n**{today}:**\n{insight}\n"
+                # <!-- DREAM_LOG_START --> ... <!-- DREAM_LOG_END --> arasına ekle
+                if "<!-- DREAM_LOG_START -->" in soul_text:
+                    soul_text = soul_text.replace(
+                        "<!-- DREAM_LOG_START -->",
+                        f"<!-- DREAM_LOG_START -->{log_entry}"
+                    )
+                    soul_path.write_text(soul_text, encoding="utf-8")
+                    logger.info("[DreamEngine] 📝 soul.md Dream Log güncellendi.")
+        except Exception as exc:
+            logger.debug(f"[DreamEngine] soul.md güncelleme hatası: {exc}")
+
 
 # Global singleton
 dream_engine = DreamEngine()
+
