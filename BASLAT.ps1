@@ -1,4 +1,4 @@
-﻿# ╔══════════════════════════════════════════════════════════╗
+# ╔══════════════════════════════════════════════════════════╗
 # ║   U.L.T.R.O.N — TEK TIKLA AC (Windows)                    ║
 # ║   Ilk acilista kurar, sonra dogrudan baslatir.            ║
 # ║   BASLAT.bat dosyasina cift tikla — baska islem gerekmez. ║
@@ -138,4 +138,4 @@ if ($NEED_INSTALL) {
 Set-Location $APP_DIR
 Clear-Host
 Write-Host "ULTRON baslatiliyor..." -ForegroundColor Cyan
-& $VENV_PY "main.py"
+& $VENV_PY "main.py" $args

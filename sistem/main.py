@@ -65,10 +65,11 @@ def main():
         raise SystemExit(0)
 
     is_web = "--web" in sys.argv
+    is_hud = "--hud" in sys.argv
 
     if not acquire_single_instance():
         print("[ULTRON] Zaten calisiyor — mevcut pencere one getiriliyor.")
-        if not is_web:
+        if not (is_web or is_hud):
             focus_window("U.L.T.R.O.N")
         return
 
@@ -105,9 +106,11 @@ def main():
     
     start_agent(token)
 
-    if is_web:
-        print("[ULTRON] Telefon/Web modu aktif. Arayuz tarayicida calisacak.")
-        print("[ULTRON] Kapatmak icin bu pencereyi (CTRL+C) kapatin.")
+    if is_web or is_hud:
+        mode_name = "Telefon/Web" if is_web else "Sadece HUD"
+        print(f"[ULTRON] {mode_name} modu aktif. Ana arayuz penceresi gizlendi.")
+        print("[ULTRON] Alt+Space ile seffaf komut kutusunu (Desktop HUD) cagirabilirsiniz.")
+        print("[ULTRON] Kapatmak icin bu terminali (CTRL+C) kapatin.")
         try:
             server_process.wait()
         except KeyboardInterrupt:
