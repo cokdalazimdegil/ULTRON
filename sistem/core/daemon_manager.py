@@ -102,4 +102,14 @@ try:
     )
 except Exception: pass
 
+# ── ULTRON 5.0 Arka Plan Servisleri ──────────────────────────────────────────
 
+# Heartbeat Engine — Otonom Zamanlı Görev Motoru (OpenClaw mimarisi)
+try:
+    from core.heartbeat_engine import heartbeat_engine
+    daemon_manager.register(
+        heartbeat_engine.start,
+        heartbeat_engine.stop,
+        "Heartbeat Engine (Otonom Zamanlayıcı)"
+    )
+except Exception: pass

@@ -64,9 +64,12 @@ def main():
     if "--selftest" in sys.argv:
         raise SystemExit(0)
 
+    is_web = "--web" in sys.argv
+
     if not acquire_single_instance():
         print("[ULTRON] Zaten calisiyor — mevcut pencere one getiriliyor.")
-        focus_window("U.L.T.R.O.N")
+        if not is_web:
+            focus_window("U.L.T.R.O.N")
         return
 
     # 1. Start backend services
@@ -80,13 +83,36 @@ def main():
         config["ultron_web_token"] = token
         save_app_config(config)
 
-    start_server(token)
+    global server_process
+    print("[ULTRON] Sunucu baslatiliyor...")
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["ULTRON_WEB_TOKEN"] = token  # Server uses this token for auth
     
-    # Wait for server to fully start (give it enough time to bind the port)
-    print("[ULTRON] Sunucu baslatiliyor, bekleniyor...")
+    server_args = [sys.executable, str(BASE_DIR / "jarvis_web" / "server.py"), "--port", "8765"]
+    if not is_web:
+        server_args.append("--no-ssl")
+
+    server_process = subprocess.Popen(
+        server_args,
+        stdout=None,
+        stderr=None,
+        env=env
+    )
+    
+    # Wait for server to fully start
     time.sleep(4.0)
     
     start_agent(token)
+
+    if is_web:
+        print("[ULTRON] Telefon/Web modu aktif. Arayuz tarayicida calisacak.")
+        print("[ULTRON] Kapatmak icin bu pencereyi (CTRL+C) kapatin.")
+        try:
+            server_process.wait()
+        except KeyboardInterrupt:
+            pass
+        return
 
     # 2. Launch pywebview window
     import webview
@@ -102,9 +128,7 @@ def main():
         easy_drag=True,
         background_color="#000000"
     )
-
     
-    # private_mode=True disables CEF disk cache so JS files are always fresh
     webview.start(private_mode=True, debug=False)
 
 if __name__ == "__main__":

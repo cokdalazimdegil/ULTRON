@@ -591,12 +591,24 @@ class LiveBridge:
                             self._last_spoken_text = full_in
                             await self.send_json({"type": "log",
                                                   "who": "user", "text": full_in})
+                            # ── JSONL Hafıza Kaydı (OpenClaw 5.0) ────────────
+                            try:
+                                from memory.transcript_store import append_turn
+                                append_turn("user", full_in)
+                            except Exception:
+                                pass
 
                         in_buf = []
                         full_out = " ".join(t for t in out_buf if t).strip()
                         if full_out:
                             await self.send_json({"type": "log",
                                                   "who": "jarvis", "text": full_out})
+                            # ── JSONL Hafıza Kaydı (OpenClaw 5.0) ────────────
+                            try:
+                                from memory.transcript_store import append_turn
+                                append_turn("jarvis", full_out)
+                            except Exception:
+                                pass
                         out_buf = []
                         await self.send_json({"type": "turn_complete"})
 
@@ -1058,11 +1070,75 @@ async def lifespan(app: FastAPI):
     from core.daemon_manager import daemon_manager
     daemon_manager.start_all()
 
+    # ── Heartbeat Engine'e broadcast fonksiyonunu bağla (OpenClaw 5.0) ────────
+    try:
+        from core.heartbeat_engine import heartbeat_engine
+
+        async def _heartbeat_broadcast(description: str, task_name: str, channel: str):
+            """Heartbeat görevi tetiklendiğinde çalışır."""
+            if channel == "silent":
+                # Sessiz mod: sadece hafızaya yaz
+                try:
+                    from memory.memory_manager import memory_manager
+                    memory_manager.add_event(
+                        "heartbeat_task",
+                        {"task": task_name, "description": description}
+                    )
+                except Exception:
+                    pass
+                return
+
+            # Broadcast modu: aktif Gemini oturumuna mesaj gönder
+            logger.info(f"[Heartbeat] Otonom görev gönderiliyor: {task_name}")
+            for bridge in list(web_clients):
+                try:
+                    await bridge.send_json({
+                        "type": "heartbeat_task",
+                        "task_name": task_name,
+                        "message": f"[Otonom Görev] {task_name}: {description}"
+                    })
+                except Exception:
+                    pass
+
+            # Gemini oturumuna gerçek prompt olarak gönder
+            for bridge in list(web_clients):
+                try:
+                    await bridge.session.send_client_content(
+                        turns={"parts": [{"text": description}]},
+                        turn_complete=True,
+                    )
+                    break  # İlk aktif oturuma gönder
+                except Exception:
+                    pass
+
+        heartbeat_engine.set_broadcast(_heartbeat_broadcast)
+        logger.info("[Sunucu] ⏰ Heartbeat Engine broadcast bağlantısı kuruldu.")
+    except Exception as exc:
+        logger.warning(f"[Sunucu] Heartbeat broadcast bağlanamadı: {exc}")
+
+    # ── Channel Registry başlat (OpenClaw 5.0 — Kanal Ayrıştırması) ──────────
+    try:
+        from channels.web_channel import web_channel
+        from channels.telegram_channel import telegram_channel
+        from channels import channel_registry
+
+        # WebChannel'a web_clients referansını bağla
+        web_channel.attach_web_clients(web_clients)
+        web_channel.start()
+
+        # Telegram kanalını başlat (token varsa aktif olur, yoksa sessizce atlar)
+        telegram_channel.start()
+
+        logger.info("[Sunucu] 📡 Channel Registry başlatıldı.")
+    except Exception as exc:
+        logger.warning(f"[Sunucu] Channel Registry başlatılamadı: {exc}")
+
     cron_task = asyncio.create_task(_proactive_cron_worker())
     yield
     cron_task.cancel()
     
     daemon_manager.stop_all()
+
 
 app.router.lifespan_context = lifespan
 

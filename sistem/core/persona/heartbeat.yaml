@@ -41,6 +41,34 @@ daemons:
     description: "Şeffaf masaüstü komut arayüzü"
     hotkey: "alt+space"
 
+# ── Otonom Zamanlı Görevler (OpenClaw Heartbeat Cron) ──────────────────────
+# Ajan bu görevleri kullanıcı mesajı beklemeden, belirtilen saatte kendi kendine yapar.
+# cron formatı: "HH:MM" veya "*/N" (her N dakikada bir)
+scheduled_tasks:
+  - name: "Sabah Özeti"
+    description: "Hava durumu, takvim ve önemli haberleri kontrol et ve YARATICI'ya sabah özeti sun."
+    cron: "08:00"
+    enabled: true
+    channel: "broadcast"   # Bağlı tüm istemcilere gönder
+
+  - name: "Öğle Hatırlatıcısı"
+    description: "Aktif hatırlatıcıları ve takvim etkinliklerini kontrol et, öğle zamanı uyar."
+    cron: "12:00"
+    enabled: true
+    channel: "broadcast"
+
+  - name: "Akşam Bellek Konsolidasyonu"
+    description: "Günün conversation özeti çıkar, hafızayı güncelle, soul.md'e içgörü ekle."
+    cron: "23:00"
+    enabled: true
+    channel: "silent"      # Sessiz mod — sadece hafızaya yaz, ses/mesaj üretme
+
+  - name: "Sistem Sağlık Kontrolü"
+    description: "Disk kullanımı, CPU yükü ve aktif daemon'ları kontrol et. Sorun varsa uyar."
+    cron: "*/60"           # Her 60 dakikada bir
+    enabled: true
+    channel: "silent"
+
 # Sistem geneli ayarlar
 settings:
   max_parallel_agents: 4
