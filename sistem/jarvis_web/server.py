@@ -1116,9 +1116,9 @@ async def lifespan(app: FastAPI):
             asyncio.run_coroutine_threadsafe(_push(), loop)
 
         proactive_watcher.register_listener(_pw_alert_callback)
-        logger.info("[Sunucu] 🔍 ProactiveWatcher listener bağlandı.")
+        print("[Sunucu] 🔍 ProactiveWatcher listener bağlandı.")
     except Exception as exc:
-        logger.warning(f"[Sunucu] ProactiveWatcher listener bağlanamadı: {exc}")
+        print(f"[Sunucu] ProactiveWatcher listener bağlanamadı: {exc}")
 
     # ── DreamEngine etkinlik pingi — kullanıcı mesajı = sistem aktif ──────────
     try:
@@ -1127,9 +1127,9 @@ async def lifespan(app: FastAPI):
         # Bu lifespan'da global bir referans kaydet
         import builtins
         builtins._ultron_dream_engine = dream_engine
-        logger.info("[Sunucu] 💤 DreamEngine etkinlik pingi kaydedildi.")
+        print("[Sunucu] 💤 DreamEngine etkinlik pingi kaydedildi.")
     except Exception as exc:
-        logger.warning(f"[Sunucu] DreamEngine ping bağlanamadı: {exc}")
+        print(f"[Sunucu] DreamEngine ping bağlanamadı: {exc}")
 
     # ── Heartbeat Engine'e broadcast fonksiyonunu bağla (OpenClaw 5.0) ────────
     try:
@@ -1150,7 +1150,7 @@ async def lifespan(app: FastAPI):
                 return
 
             # Broadcast modu: aktif Gemini oturumuna mesaj gönder
-            logger.info(f"[Heartbeat] Otonom görev gönderiliyor: {task_name}")
+            print(f"[Heartbeat] Otonom görev gönderiliyor: {task_name}")
             for bridge in list(web_clients):
                 try:
                     await bridge.send_json({
@@ -1173,9 +1173,9 @@ async def lifespan(app: FastAPI):
                     pass
 
         heartbeat_engine.set_broadcast(_heartbeat_broadcast)
-        logger.info("[Sunucu] ⏰ Heartbeat Engine broadcast bağlantısı kuruldu.")
+        print("[Sunucu] ⏰ Heartbeat Engine broadcast bağlantısı kuruldu.")
     except Exception as exc:
-        logger.warning(f"[Sunucu] Heartbeat broadcast bağlanamadı: {exc}")
+        print(f"[Sunucu] Heartbeat broadcast bağlanamadı: {exc}")
 
     # ── Channel Registry başlat (OpenClaw 5.0 — Kanal Ayrıştırması) ──────────
     try:
@@ -1190,9 +1190,9 @@ async def lifespan(app: FastAPI):
         # Telegram kanalını başlat (token varsa aktif olur, yoksa sessizce atlar)
         telegram_channel.start()
 
-        logger.info("[Sunucu] 📡 Channel Registry başlatıldı.")
+        print("[Sunucu] 📡 Channel Registry başlatıldı.")
     except Exception as exc:
-        logger.warning(f"[Sunucu] Channel Registry başlatılamadı: {exc}")
+        print(f"[Sunucu] Channel Registry başlatılamadı: {exc}")
 
     cron_task = asyncio.create_task(_proactive_cron_worker())
     yield
