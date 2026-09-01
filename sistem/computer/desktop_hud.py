@@ -21,22 +21,26 @@ from typing import Optional
 
 logger = logging.getLogger("ultron.computer.desktop_hud")
 
-# Renkler (Ultron teması)
-BG_COLOR      = "#080010"
-BORDER_COLOR  = "#00ccff"
-TEXT_COLOR    = "#ffddcc"
-INPUT_BG      = "#0a0018"
-ACCENT        = "#ff4422"
-RESPONSE_FG   = "#00ff88"
-DIM_COLOR     = "#444444"
+# Renkler (Sleek Modern Raycast/Spotlight teması)
+BG_COLOR      = "#1c1c1e"       # Koyu Apple gri
+BORDER_COLOR  = "#333336"       # İnce çerçeve
+TEXT_COLOR    = "#f5f5f7"       # Parlak beyaz (metin)
+INPUT_BG      = "#2c2c2e"       # Giriş alanı hafif daha açık
+ACCENT        = "#0a84ff"       # Modern mavi
+RESPONSE_FG   = "#d1d1d6"       # Yanıt metni (hafif gri)
+DIM_COLOR     = "#8e8e93"       # Pasif metin
 
 HOTKEY        = "alt+space"
 WS_TIMEOUT    = 10.0
+FONT_MAIN     = ("Segoe UI", 11)
+FONT_BOLD     = ("Segoe UI", 11, "bold")
+FONT_TITLE    = ("Segoe UI", 12, "bold")
+FONT_SMALL    = ("Segoe UI", 9)
 
 
 class DesktopHUD:
     """
-    Şeffaf, borderless tkinter penceresi.
+    Şeffaf, borderless tkinter penceresi. Modern, minimal UI.
     Alt+Space ile gösterilir/gizlenir.
     Komutlar WebSocket üzerinden server.py'ye gönderilir.
     """
@@ -60,11 +64,10 @@ class DesktopHUD:
             cfg_path = data_path("jarvis_web", "web_config.json")
             if cfg_path.exists():
                 cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-                port = cfg.get("port", 8765)
-                return f"ws://localhost:{port}"
+                return f"ws://{cfg.get('host', '127.0.0.1')}:{cfg.get('port', 8765)}"
         except Exception:
             pass
-        return "ws://localhost:8765"
+        return "ws://127.0.0.1:8765"
 
     def start(self):
         """HUD'u ayrı bir işlem (subprocess) olarak başlatır."""
@@ -78,11 +81,13 @@ class DesktopHUD:
         # Sadece ana süreçten çağrıldığında alt süreç başlat (sonsuz döngüyü önle)
         if not hasattr(sys, "frozen") and __name__ != "__main__":
             try:
+                env = os.environ.copy()
                 self._process = subprocess.Popen(
                     [sys.executable, str(script_path)],
-                    cwd=str(sistem_dir),  # KRITIK: sistem/ dizininde çalışsın, import'lar düzgün çalışır
+                    cwd=str(sistem_dir),
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    env=env,
                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
                 )
                 logger.info("✅ [DesktopHUD] Masaüstü HUD başlatıldı (Subprocess).")
@@ -118,15 +123,15 @@ class DesktopHUD:
         root.title("ULTRON HUD")
         root.overrideredirect(True)    # Başlık çubuğu yok
         root.attributes("-topmost", True)
-        root.attributes("-alpha", 0.93)
+        root.attributes("-alpha", 0.96)
         root.configure(bg=BG_COLOR)
 
         # Ekranın ortasına yerleştir
         sw = root.winfo_screenwidth()
         sh = root.winfo_screenheight()
-        w, h = 620, 320
+        w, h = 650, 350
         x = (sw - w) // 2
-        y = int(sh * 0.25)
+        y = int(sh * 0.2)
         root.geometry(f"{w}x{h}+{x}+{y}")
 
         # Sürüklenebilir pencere
@@ -139,66 +144,60 @@ class DesktopHUD:
     def _setup_widgets(self):
         root = self._root
 
-        # Dış çerçeve (neon kenarlık efekti)
+        # Dış çerçeve (çok ince, modern sınır)
         frame = tk.Frame(root, bg=BORDER_COLOR, padx=1, pady=1)
-        frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        frame.pack(fill=tk.BOTH, expand=True)
 
-        inner = tk.Frame(frame, bg=BG_COLOR, padx=12, pady=10)
+        inner = tk.Frame(frame, bg=BG_COLOR, padx=20, pady=20)
         inner.pack(fill=tk.BOTH, expand=True)
 
         # Başlık satırı
         header = tk.Frame(inner, bg=BG_COLOR)
-        header.pack(fill=tk.X, pady=(0, 8))
+        header.pack(fill=tk.X, pady=(0, 15))
 
         title_lbl = tk.Label(
-            header, text="⚡ U.L.T.R.O.N", fg=BORDER_COLOR, bg=BG_COLOR,
-            font=("Courier New", 11, "bold"), anchor="w"
+            header, text="U.L.T.R.O.N", fg=TEXT_COLOR, bg=BG_COLOR,
+            font=FONT_TITLE, anchor="w"
         )
         title_lbl.pack(side=tk.LEFT)
 
         # Swarm agent sayacı
-        self._status_var = tk.StringVar(value="● HAZIR")
+        self._status_var = tk.StringVar(value="Hazır")
         status_lbl = tk.Label(
             header, textvariable=self._status_var, fg=DIM_COLOR,
-            bg=BG_COLOR, font=("Courier New", 9), anchor="e"
+            bg=BG_COLOR, font=FONT_SMALL, anchor="e"
         )
         status_lbl.pack(side=tk.RIGHT)
 
-        # Yanıt alanı
-        resp_frame = tk.Frame(inner, bg=INPUT_BG, padx=8, pady=6)
-        resp_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
-
-        self._response_text = tk.Text(
-            resp_frame, bg=INPUT_BG, fg=RESPONSE_FG,
-            font=("Courier New", 10), wrap=tk.WORD,
-            state=tk.DISABLED, borderwidth=0, highlightthickness=0,
-            height=8,
-        )
-        self._response_text.pack(fill=tk.BOTH, expand=True)
-
-        # Komut giriş alanı
-        input_frame = tk.Frame(inner, bg=BORDER_COLOR, padx=1, pady=1)
-        input_frame.pack(fill=tk.X)
-
-        input_inner = tk.Frame(input_frame, bg=INPUT_BG, padx=8, pady=6)
-        input_inner.pack(fill=tk.BOTH)
+        # Komut giriş alanı (Üstte)
+        input_frame = tk.Frame(inner, bg=INPUT_BG, padx=15, pady=12)
+        input_frame.pack(fill=tk.X, pady=(0, 15))
 
         prompt_lbl = tk.Label(
-            input_inner, text="›", fg=ACCENT, bg=INPUT_BG,
-            font=("Courier New", 14, "bold")
+            input_frame, text="✨", fg=ACCENT, bg=INPUT_BG,
+            font=FONT_TITLE
         )
-        prompt_lbl.pack(side=tk.LEFT, padx=(0, 6))
+        prompt_lbl.pack(side=tk.LEFT, padx=(0, 10))
 
         self._input_var = tk.StringVar()
         entry = tk.Entry(
-            input_inner, textvariable=self._input_var,
-            bg=INPUT_BG, fg=TEXT_COLOR, insertbackground=BORDER_COLOR,
-            font=("Courier New", 11), borderwidth=0, highlightthickness=0,
+            input_frame, textvariable=self._input_var,
+            bg=INPUT_BG, fg=TEXT_COLOR, insertbackground=ACCENT,
+            font=FONT_MAIN, borderwidth=0, highlightthickness=0,
         )
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         entry.bind("<Return>", self._on_submit)
         entry.focus_set()
         self._entry = entry
+
+        # Yanıt alanı (Altta)
+        self._response_text = tk.Text(
+            inner, bg=BG_COLOR, fg=RESPONSE_FG,
+            font=FONT_MAIN, wrap=tk.WORD,
+            state=tk.DISABLED, borderwidth=0, highlightthickness=0,
+            height=9,
+        )
+        self._response_text.pack(fill=tk.BOTH, expand=True)
 
     # ── Sürükleme ─────────────────────────────────────────────────────────────
 
@@ -248,8 +247,7 @@ class DesktopHUD:
                 elif cmd == "response":
                     self._show_response(data)
                 elif cmd == "status":
-                    if self._status_var:
-                        self._status_var.set(data)
+                    self._status_var.set(data)
         except queue.Empty:
             pass
         finally:
@@ -271,8 +269,8 @@ class DesktopHUD:
         if not text:
             return
         self._input_var.set("")
-        self._msg_queue.put(("response", f"⏳ Gönderiliyor: {text}"))
-        self._msg_queue.put(("status", "● DÜŞÜNÜYOR..."))
+        self._msg_queue.put(("response", f"İşleniyor: {text}"))
+        self._msg_queue.put(("status", "Düşünüyor..."))
         threading.Thread(target=self._send_command, args=(text,), daemon=True).start()
 
     def _send_command(self, text: str):
@@ -285,24 +283,28 @@ class DesktopHUD:
 
             with _wsc.connect(url, open_timeout=5) as ws:
                 ws.send(json.dumps({"type": "text", "text": text}))
-                self._msg_queue.put(("status", "● YANIT BEKLENİYOR..."))
+                self._msg_queue.put(("status", "Yanıt bekleniyor..."))
                 # İlk yanıt mesajını bekle
                 response = ws.recv(timeout=WS_TIMEOUT)
                 data = json.loads(response)
                 reply = data.get("text") or data.get("content") or str(data)
-                self._msg_queue.put(("response", reply[:800]))
+                self._msg_queue.put(("response", reply[:1500]))
         except Exception as exc:
-            self._msg_queue.put(("response", f"⚠️ Sunucu bağlantısı kurulamadı.\n{exc}"))
+            self._msg_queue.put(("response", f"Sunucu bağlantısı kurulamadı.\n{exc}"))
         finally:
-            self._msg_queue.put(("status", "● HAZIR"))
+            self._msg_queue.put(("status", "Hazır"))
 
     def _get_token(self) -> str:
+        """Token'ı önce ortam değişkeninden, yoksa config dosyasından okur."""
+        env_token = os.environ.get("ULTRON_WEB_TOKEN", "").strip()
+        if env_token:
+            return env_token
         try:
             from app_paths import data_path
             cfg = json.loads(data_path("jarvis_web", "web_config.json").read_text(encoding="utf-8"))
             return cfg.get("token", "")
         except Exception:
-            return os.environ.get("ULTRON_WEB_TOKEN", "")
+            return ""
 
     # ── Global Hotkey ─────────────────────────────────────────────────────────
 

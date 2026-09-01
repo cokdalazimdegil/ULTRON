@@ -29,23 +29,29 @@ PRESENCE_LOST_THRESHOLD   = 3    # kaç ardışık "boş kare" sonrasında "gitt
 
 # Global — lazy init (start() içinde yüklenir)
 FACE_CASCADE = None
+_CASCADE_FAILED = False
 
 def _get_face_cascade():
     """CascadeClassifier'ı lazy olarak yükler; hata varsa None döner."""
-    global FACE_CASCADE
+    global FACE_CASCADE, _CASCADE_FAILED
     if FACE_CASCADE is not None:
         return FACE_CASCADE
+    if _CASCADE_FAILED:
+        return None
     try:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         cascade = cv2.CascadeClassifier(cascade_path)
         if cascade.empty():
-            logger.warning("[ObserverDaemon] Haar cascade dosyası boş veya bulunamadı.")
+            logger.warning("[ObserverDaemon] Haar cascade dosyası boş veya bulunamadı. Yüz algılama devre dışı.")
+            _CASCADE_FAILED = True
             return None
         FACE_CASCADE = cascade
         return FACE_CASCADE
     except Exception as exc:
-        logger.warning(f"[ObserverDaemon] CascadeClassifier yüklenemedi: {exc}")
+        logger.warning(f"[ObserverDaemon] Yüz algılama modülü yüklenemedi, atlanıyor ({exc})")
+        _CASCADE_FAILED = True
         return None
+
 
 
 
