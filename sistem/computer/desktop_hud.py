@@ -71,19 +71,21 @@ class DesktopHUD:
         import sys
         import subprocess
         from pathlib import Path
-        
+
         script_path = Path(__file__).resolve()
-        
+        sistem_dir = script_path.parent.parent  # sistem/
+
         # Sadece ana süreçten çağrıldığında alt süreç başlat (sonsuz döngüyü önle)
         if not hasattr(sys, "frozen") and __name__ != "__main__":
             try:
                 self._process = subprocess.Popen(
                     [sys.executable, str(script_path)],
+                    cwd=str(sistem_dir),  # KRITIK: sistem/ dizininde çalışsın, import'lar düzgün çalışır
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
                 )
-                logger.info("[DesktopHUD] 🖥️ Masaüstü HUD başlatıldı (Subprocess).")
+                logger.info("✅ [DesktopHUD] Masaüstü HUD başlatıldı (Subprocess).")
             except Exception as exc:
                 logger.error(f"[DesktopHUD] Subprocess başlatma hatası: {exc}")
 
@@ -94,6 +96,7 @@ class DesktopHUD:
                 self._process.terminate()
         except Exception:
             pass
+
 
     # ── Tkinter Penceresi ─────────────────────────────────────────────────────
 

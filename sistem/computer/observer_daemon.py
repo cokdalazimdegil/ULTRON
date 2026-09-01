@@ -22,15 +22,31 @@ from core.event_bus import bus
 
 logger = logging.getLogger("ultron.computer.observer")
 
-# Yüz algılama modeli — OpenCV'nin dahili Haar cascade dosyası
-FACE_CASCADE = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
-
 # Varsayılan ayarlar
 DEFAULT_PATROL_INTERVAL   = 30   # saniye — kare yakalama aralığı
 MOOD_ANALYSIS_INTERVAL    = 120  # saniye — Gemini çağrı aralığı (API limiti)
 PRESENCE_LOST_THRESHOLD   = 3    # kaç ardışık "boş kare" sonrasında "gitti" denir
+
+# Global — lazy init (start() içinde yüklenir)
+FACE_CASCADE = None
+
+def _get_face_cascade():
+    """CascadeClassifier'ı lazy olarak yükler; hata varsa None döner."""
+    global FACE_CASCADE
+    if FACE_CASCADE is not None:
+        return FACE_CASCADE
+    try:
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        cascade = cv2.CascadeClassifier(cascade_path)
+        if cascade.empty():
+            logger.warning("[ObserverDaemon] Haar cascade dosyası boş veya bulunamadı.")
+            return None
+        FACE_CASCADE = cascade
+        return FACE_CASCADE
+    except Exception as exc:
+        logger.warning(f"[ObserverDaemon] CascadeClassifier yüklenemedi: {exc}")
+        return None
+
 
 
 class ObserverDaemon:
@@ -132,14 +148,18 @@ class ObserverDaemon:
     def _detect_face_local(self, frame_b64: str) -> bool:
         """Lokal Haar cascade ile yüz tespiti — API çağrısı yok, hızlı."""
         try:
+            cascade = _get_face_cascade()
+            if cascade is None:
+                return False
             img_bytes = base64.b64decode(frame_b64)
             import numpy as np
             arr = np.frombuffer(img_bytes, dtype=np.uint8)
             img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
-            faces = FACE_CASCADE.detectMultiScale(img, scaleFactor=1.1, minNeighbors=5)
+            faces = cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=5)
             return len(faces) > 0
         except Exception:
             return False
+
 
     def _analyze_mood_gemini(self, frame_b64: str) -> Optional[str]:
         """Yüz varken Gemini Vision'a kısa ruh hali sorusu gönderir."""

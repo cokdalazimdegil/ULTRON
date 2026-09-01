@@ -597,6 +597,14 @@ class LiveBridge:
                                 append_turn("user", full_in)
                             except Exception:
                                 pass
+                            # ── DreamEngine Aktivite Pingi ────────────────────
+                            try:
+                                import builtins
+                                de = getattr(builtins, '_ultron_dream_engine', None)
+                                if de:
+                                    de.ping_activity()
+                            except Exception:
+                                pass
 
                         in_buf = []
                         full_out = " ".join(t for t in out_buf if t).strip()
@@ -1069,6 +1077,59 @@ async def lifespan(app: FastAPI):
     # Arka plan servislerini başlat
     from core.daemon_manager import daemon_manager
     daemon_manager.start_all()
+
+    # ── ProactiveWatcher → WebSocket Listener (Gerçek Zamanlı Push) ──────────
+    try:
+        from computer.proactive_watcher import proactive_watcher
+
+        def _pw_alert_callback(alert):
+            """ProactiveWatcher alert ürettiğinde web istemcilerine push yapar."""
+            async def _push():
+                alert_dict = alert.to_dict() if hasattr(alert, 'to_dict') else alert
+                msg = {
+                    "type": "proactive_alert",
+                    "alert": alert_dict,
+                    "alert_id": alert_dict.get("alert_id", ""),
+                    "title": alert_dict.get("title", "Uyarı"),
+                    "text": alert_dict.get("message", ""),
+                    "severity": alert_dict.get("severity", "INFO"),
+                }
+                for bridge in list(web_clients):
+                    try:
+                        await bridge.send_json(msg)
+                        # Gemini oturumuna da gönder — ajan sesli anlatsın
+                        if bridge.session and alert_dict.get("severity") in ("HIGH", "CRITICAL"):
+                            try:
+                                await bridge.session.send_client_content(
+                                    turns={"parts": [{"text": (
+                                        f"[PROAKTİF UYARI - KULLANICIYA HABER VER]: "
+                                        f"{alert_dict.get('title')}: {alert_dict.get('message', '')} "
+                                        f"Önerilen aksiyon: {alert_dict.get('suggested_action', '')}"
+                                    )}]},
+                                    turn_complete=True
+                                )
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+            asyncio.run_coroutine_threadsafe(_push(), loop)
+
+        proactive_watcher.register_listener(_pw_alert_callback)
+        logger.info("[Sunucu] 🔍 ProactiveWatcher listener bağlandı.")
+    except Exception as exc:
+        logger.warning(f"[Sunucu] ProactiveWatcher listener bağlanamadı: {exc}")
+
+    # ── DreamEngine etkinlik pingi — kullanıcı mesajı = sistem aktif ──────────
+    try:
+        from memory.dream_engine import dream_engine
+        # Her WebSocket mesajında dream_engine.ping_activity() çağrılsın
+        # Bu lifespan'da global bir referans kaydet
+        import builtins
+        builtins._ultron_dream_engine = dream_engine
+        logger.info("[Sunucu] 💤 DreamEngine etkinlik pingi kaydedildi.")
+    except Exception as exc:
+        logger.warning(f"[Sunucu] DreamEngine ping bağlanamadı: {exc}")
 
     # ── Heartbeat Engine'e broadcast fonksiyonunu bağla (OpenClaw 5.0) ────────
     try:
