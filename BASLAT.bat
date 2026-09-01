@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title U.L.T.R.O.N - Live Console & Logs
+title "U.L.T.R.O.N - Live Console & Logs"
 echo ======================================================
 echo   U.L.T.R.O.N Sistem ve Canli Log Konsolu Baslatiliyor
 echo ======================================================

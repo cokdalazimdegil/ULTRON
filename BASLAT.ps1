@@ -1,8 +1,8 @@
-# ╔══════════════════════════════════════════════════════════╗
-# ║   U.L.T.R.O.N — TEK TIKLA AC (Windows)                    ║
-# ║   Ilk acilista kurar, sonra dogrudan baslatir.            ║
-# ║   BASLAT.bat dosyasina cift tikla — baska islem gerekmez. ║
-# ╚══════════════════════════════════════════════════════════╝
+﻿# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+# â•‘   U.L.T.R.O.N â€” TEK TIKLA AC (Windows)                    â•‘
+# â•‘   Ilk acilista kurar, sonra dogrudan baslatir.            â•‘
+# â•‘   BASLAT.bat dosyasina cift tikla â€” baska islem gerekmez. â•‘
+# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -30,7 +30,7 @@ function Test-PyVersion([string]$exe) {
 }
 
 function Find-Python {
-    # 1) py launcher — en guvenilir yol
+    # 1) py launcher â€” en guvenilir yol
     foreach ($v in @("-3.13", "-3.12", "-3.11", "-3")) {
         try {
             $out = & py $v -c "import sys; print(sys.executable)" 2>$null
@@ -56,20 +56,20 @@ function Find-Python {
     return $null
 }
 
-# ── Kurulu mu? (venv var + Python 3.11+) ──────────────────────
+# â”€â”€ Kurulu mu? (venv var + Python 3.11+) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $NEED_INSTALL = $true
 if ((Test-Path $VENV_PY) -and (Test-PyVersion $VENV_PY)) { $NEED_INSTALL = $false }
 
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  KURULUM (yalnizca ilk acilista veya eksik/eski kurulumda)
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 if ($NEED_INSTALL) {
     Start-Transcript -Path $LOG -Force | Out-Null
     Clear-Host
     Write-Host ""
-    Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║      U.L.T.R.O.N  ILK KURULUM  —  Lutfen bekleyin        ║" -ForegroundColor Cyan
-    Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—" -ForegroundColor Cyan
+    Write-Host "â•‘      U.L.T.R.O.N  ILK KURULUM  â€”  Lutfen bekleyin        â•‘" -ForegroundColor Cyan
+    Write-Host "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
     Write-Host ""
 
     # 1) Python 3.11+
@@ -82,7 +82,7 @@ if ($NEED_INSTALL) {
                 --accept-package-agreements --accept-source-agreements `
                 --silent --disable-interactivity
             # Tek satir olmali: PowerShell satir sonundaki '+' ile devam etmiyor.
-            $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
+            $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
             $PYTHON = Find-Python
         }
     }
@@ -132,9 +132,9 @@ if ($NEED_INSTALL) {
     Start-Sleep -Seconds 1
 }
 
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 #  BASLAT
-# ══════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 Set-Location $APP_DIR
 Clear-Host
 Write-Host "ULTRON baslatiliyor..." -ForegroundColor Cyan
