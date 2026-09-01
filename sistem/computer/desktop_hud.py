@@ -706,7 +706,7 @@ class DesktopHUD:
             try:
                 import websockets.sync.client as wsc
                 token = urllib.parse.quote(self._get_token())
-                url = f"{self._server_url}/ws/live?token={token}"
+                url = f"{self._server_url}/ws/client?token={token}"
                 self._ws = wsc.connect(url, open_timeout=5)
                 self._connected = True
                 retry = 1.0
