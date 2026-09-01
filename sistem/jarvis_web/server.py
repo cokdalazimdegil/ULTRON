@@ -141,6 +141,9 @@ def ensure_token() -> str:
 
 # Herkese açık modda ortak token yok (herkesin anahtarı kendi kimliği)
 TOKEN = "" if PUBLIC_MODE else ensure_token()
+# Alt süreçlerin (DesktopHUD, vb.) doğru token'ı alabilmesi için ortama da yazalım.
+if TOKEN:
+    os.environ["ULTRON_WEB_TOKEN"] = TOKEN
 
 
 def get_api_key() -> str:

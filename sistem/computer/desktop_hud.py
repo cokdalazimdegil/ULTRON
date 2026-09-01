@@ -1,4 +1,4 @@
-﻿"""
+"""
 ULTRON Desktop HUD v2 — Şeffaf Masaüstü Komut Arayüzü
 ──────────────────────────────────────────────────────
 Alt+Space ile ekranın üstüne şeffaf, borderless bir komut kutusu açar.
@@ -94,7 +94,7 @@ class DesktopHUD:
         self._root: Optional[tk.Tk] = None
         self._input_var: Optional[tk.StringVar] = None
         self._response_text: Optional[tk.Text] = None
-        self._status_var = tk.StringVar(value="BAŞLATILIYOR")
+        self._status_var: Optional[tk.StringVar] = None
         self._msg_queue: queue.Queue = queue.Queue()
         self._hotkey_registered = False
         self._server_url = self._get_server_url()
@@ -300,6 +300,7 @@ class DesktopHUD:
         self._conn_lbl = tk.Label(header, text="●", fg=ERR_COLOR, bg=BG_COLOR, font=FONT_SMALL)
         self._conn_lbl.pack(side=tk.RIGHT, padx=(0, 6))
 
+        self._status_var = tk.StringVar(value="BAŞLATILIYOR")
         self._status_lbl = tk.Label(header, textvariable=self._status_var,
                                     fg=DIM_COLOR, bg=BG_COLOR, font=FONT_SMALL)
         self._status_lbl.pack(side=tk.RIGHT)
