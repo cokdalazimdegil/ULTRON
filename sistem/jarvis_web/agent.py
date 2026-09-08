@@ -445,6 +445,19 @@ def execute_tool(name: str, args: dict) -> str:
                 return "Önceki sayfaya dönüldü." if ok else "Geri dönülemedi."
             return f"Bilinmeyen tarayıcı eylemi: {action}"
 
+        if name == "shopping_action":
+            from actions.shopping import search_product_and_open
+            return search_product_and_open(
+                product_name=args.get("product_name", ""),
+                platform=args.get("platform", "auto"),
+                add_to_cart=bool(args.get("add_to_cart", False))
+            )
+
+        if name in ("ask_openclaw_brain", "openclaw_brain_query"):
+            from core.openclaw_brain import openclaw_brain
+            query = args.get("query") or args.get("instruction") or args.get("message") or ""
+            return openclaw_brain.ask(query)
+
         if name == "start_swarm_project":
             desc = args.get("project_description", "").strip()
             import threading

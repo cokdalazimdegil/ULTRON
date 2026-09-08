@@ -113,3 +113,14 @@ try:
         "Heartbeat Engine (Otonom Zamanlayıcı)"
     )
 except Exception: pass
+
+# OpenClaw Brain — Otonom AI Gateway Motoru
+try:
+    from core.openclaw_brain import openclaw_brain
+    daemon_manager.register(
+        openclaw_brain.start_gateway,
+        openclaw_brain.stop_gateway,
+        "OpenClaw Brain (Otonom AI Gateway Motoru)"
+    )
+except Exception: pass
+

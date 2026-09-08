@@ -645,7 +645,7 @@ class LiveBridge:
                 active_agent = "research_agent"
             else:
                 active_agent = "supervisor"
-        elif name == "orchestrate_task":
+        elif name in ("orchestrate_task", "ask_openclaw_brain", "openclaw_brain_query"):
             active_agent = "supervisor"
         elif name == "code_action":
             active_agent = "coding_agent"
@@ -653,7 +653,7 @@ class LiveBridge:
             active_agent = "testing_agent"
         elif name == "code_review":
             active_agent = "reviewer_agent"
-        elif name in ("screen_awareness", "computer_control", "open_app"):
+        elif name in ("screen_awareness", "computer_control", "open_app", "browser_action", "browser_control", "shopping_action"):
             active_agent = "computer_agent"
         elif name in ("fetch_webpage_content", "search_emails", "web_search", "deep_research"):
             active_agent = "research_agent"

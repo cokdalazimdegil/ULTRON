@@ -1090,5 +1090,45 @@ TOOL_DECLARATIONS = [
                 "original_message"
             ]
         }
+    },
+    {
+        "name": "shopping_action",
+        "description": "Trendyol, Amazon, Hepsiburada gibi e-ticaret sitelerinde ürün arar, Chrome tarayıcısında ürün sayfasını anında açar ve sepete ekleme sürecini başlatır. Kullanıcı kameradan bir ürün gösterip 'bunu Trendyol'da ara', 'Amazon'da sepetime ekle', 'fiyatını bul', 'satın al', 'Trendyol'da aç' dediğinde KESİNLİKLE bu aracı çağır. Asla 'yeteneğim yok' veya 'hesabına erişemem' deme, derhal bu aracı çalıştır.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "product_name": {
+                    "type": "STRING",
+                    "description": "Kamerada görünen veya kullanıcının aramak istediği ürünün adı / tanımı (örn: 'su şişesi', 'mavi tükenmez kalem', 'kablosuz kulaklık')"
+                },
+                "platform": {
+                    "type": "STRING",
+                    "description": "trendyol | amazon | hepsiburada | auto (varsayılan: auto)"
+                },
+                "add_to_cart": {
+                    "type": "BOOLEAN",
+                    "description": "Kullanıcı sepete ekle veya satın al dediyse true, sadece arama ve sayfayı açma istediyse false"
+                }
+            },
+            "required": [
+                "product_name"
+            ]
+        }
+    },
+    {
+        "name": "ask_openclaw_brain",
+        "description": "ULTRON'un arkasındaki otonom OpenClaw AI Beynine danışır. Kullanıcı karmaşık bir soru sorduğunda, kod yazımı, teknik analiz, çok adımlı planlama, internet araştırması veya derin zeka gerektiren herhangi bir konu istediğinde KESİNLİKLE bu aracı çağır. OpenClaw beyninden gelen cevabı alıp kullanıcıya aktar.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "OpenClaw beynine yöneltilecek detaylı soru, komut, araştırma konusu veya görev."
+                }
+            },
+            "required": [
+                "query"
+            ]
+        }
     }
 ]

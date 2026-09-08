@@ -1,8 +1,8 @@
-﻿# â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
-# â•‘   U.L.T.R.O.N â€” TEK TIKLA AC (Windows)                    â•‘
-# â•‘   Ilk acilista kurar, sonra dogrudan baslatir.            â•‘
-# â•‘   BASLAT.bat dosyasina cift tikla â€” baska islem gerekmez. â•‘
-# â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ======================================================
+#   U.L.T.R.O.N - TEK TIKLA AC (Windows)
+#   Ilk acilista kurar, sonra dogrudan baslatir.
+#   BASLAT.bat dosyasina cift tikla - baska islem gerekmez.
+# ======================================================
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -19,18 +19,17 @@ if (Test-Path (Join-Path $ROOT_DIR "sistem\main.py")) {
 $VENV_DIR = Join-Path $APP_DIR ".venv"
 $VENV_PY  = Join-Path $VENV_DIR "Scripts\python.exe"
 $LOG      = Join-Path $env:TEMP "jarvis_kurulum.log"
-$MIN_MINOR = 11
 
 function Test-PyVersion([string]$exe) {
     if (-not $exe) { return $false }
     try {
-        & $exe -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, $MIN_MINOR) else 1)" 2>$null
+        & $exe -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>$null
         return ($LASTEXITCODE -eq 0)
     } catch { return $false }
 }
 
 function Find-Python {
-    # 1) py launcher â€” en guvenilir yol
+    # 1) py launcher - en guvenilir yol
     foreach ($v in @("-3.13", "-3.12", "-3.11", "-3")) {
         try {
             $out = & py $v -c "import sys; print(sys.executable)" 2>$null
@@ -56,20 +55,20 @@ function Find-Python {
     return $null
 }
 
-# â”€â”€ Kurulu mu? (venv var + Python 3.11+) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Kurulu mu? (venv var + Python 3.11+) ---
 $NEED_INSTALL = $true
 if ((Test-Path $VENV_PY) -and (Test-PyVersion $VENV_PY)) { $NEED_INSTALL = $false }
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ======================================================
 #  KURULUM (yalnizca ilk acilista veya eksik/eski kurulumda)
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ======================================================
 if ($NEED_INSTALL) {
     Start-Transcript -Path $LOG -Force | Out-Null
     Clear-Host
     Write-Host ""
-    Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—" -ForegroundColor Cyan
-    Write-Host "â•‘      U.L.T.R.O.N  ILK KURULUM  â€”  Lutfen bekleyin        â•‘" -ForegroundColor Cyan
-    Write-Host "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•" -ForegroundColor Cyan
+    Write-Host "======================================================" -ForegroundColor Cyan
+    Write-Host "      U.L.T.R.O.N  ILK KURULUM  -  Lutfen bekleyin     " -ForegroundColor Cyan
+    Write-Host "======================================================" -ForegroundColor Cyan
     Write-Host ""
 
     # 1) Python 3.11+
@@ -81,18 +80,19 @@ if ($NEED_INSTALL) {
             winget install --id Python.Python.3.12 --scope user `
                 --accept-package-agreements --accept-source-agreements `
                 --silent --disable-interactivity
-            # Tek satir olmali: PowerShell satir sonundaki '+' ile devam etmiyor.
-            $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + [Environment]::GetEnvironmentVariable('Path', 'Machine')
+            $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+            $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+            $env:Path = $userPath + ";" + $machinePath
             $PYTHON = Find-Python
         }
     }
     if (-not $PYTHON) {
         Write-Host ""
         Write-Host "Python 3.11+ kurulamadi." -ForegroundColor Red
-        Write-Host "https://www.python.org/downloads/ adresinden Python 3.12'yi kur"
-        Write-Host "('Add python.exe to PATH' kutusunu ISARETLE) ve BASLAT.bat'a tekrar cift tikla."
+        Write-Host "https://www.python.org/downloads/ adresinden Python 3.12 kurun."
+        Write-Host "Add python.exe to PATH secenegini isaretleyin ve BASLAT.bat calistirin."
         Stop-Transcript | Out-Null
-        Read-Host "Kapatmak icin Enter'a bas"
+        Read-Host "Kapatmak icin Enter tusuna basin"
         exit 1
     }
     Write-Host ("Python: " + (& $PYTHON --version 2>&1)) -ForegroundColor Green
@@ -108,7 +108,6 @@ if ($NEED_INSTALL) {
     }
 
     # 3) Paketler
-    # Not: Windows'ta pyaudio icin hazir wheel var, PortAudio derlemek gerekmez.
     Write-Host "Paketler yukleniyor (birkac dakika)..."
     & $VENV_PY -m pip install --upgrade pip --quiet
     & $VENV_PY -m pip install -r (Join-Path $APP_DIR "requirements.txt") --quiet
@@ -117,7 +116,7 @@ if ($NEED_INSTALL) {
         Write-Host "Paket kurulumu basarisiz. Internetini kontrol et, tekrar dene." -ForegroundColor Red
         Write-Host "Sorun surerse su dosyayi gonder: $LOG"
         Stop-Transcript | Out-Null
-        Read-Host "Kapatmak icin Enter'a bas"
+        Read-Host "Kapatmak icin Enter tusuna basin"
         exit 1
     }
 
@@ -132,10 +131,14 @@ if ($NEED_INSTALL) {
     Start-Sleep -Seconds 1
 }
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ======================================================
 #  BASLAT
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ======================================================
 Set-Location $APP_DIR
 Clear-Host
-Write-Host "ULTRON baslatiliyor..." -ForegroundColor Cyan
+Write-Host "ULTRON & OpenClaw Beyin Motoru baslatiliyor..." -ForegroundColor Cyan
+try {
+    $ocver = openclaw --version 2>$null
+    if ($ocver) { Write-Host "OpenClaw Beyin: v$ocver" -ForegroundColor Green }
+} catch { }
 & $VENV_PY "main.py" $args

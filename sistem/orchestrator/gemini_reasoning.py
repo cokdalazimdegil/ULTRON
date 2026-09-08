@@ -1,4 +1,4 @@
-﻿"""
+"""
 ULTRON Orchestrator — Gemini & OpenClaw Hybrid Reasoning Engine
 """
 
@@ -13,7 +13,6 @@ from typing import Any, List, Optional
 
 from google import genai
 from google.genai import errors, types
-from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
 
 from app_config import get_app_config_value
 
@@ -45,22 +44,6 @@ def _extract_text(response: Any) -> str:
                 chunks.append(part_text)
     return "\n".join(chunk for chunk in chunks if chunk).strip()
 
-async def _run_antigravity_agent(prompt: str, sys_prompt: str) -> str:
-    """OpenClaw (Antigravity) motoru uzerinden agentic reasoning calistirir."""
-    api_key = _get_api_key()
-    if api_key:
-        os.environ["GEMINI_API_KEY"] = api_key
-    
-    config = LocalAgentConfig(
-        system_instructions=sys_prompt or "You are ULTRON core reasoning engine.",
-        capabilities=CapabilitiesConfig(enable_write_tools=True)
-    )
-    
-    async with Agent(config) as agent:
-        response = await agent.chat(prompt)
-        text = await response.text()
-        return text
-
 def query_gemini_reasoning(
     prompt: str,
     system_instruction: str = "",
@@ -69,19 +52,18 @@ def query_gemini_reasoning(
     image_bytes: Optional[bytes] = None,
     image_mime: str = "image/jpeg"
 ) -> str:
-    # Eger gorsel analiz yoksa ve OpenClaw ajan yonetimi cagirildiysa, yeni motoru dene.
+    # 1. Görsel analiz yoksa OpenClaw otonom AI beynini kullan
     if not image_bytes:
         try:
-            # Yeni bir olay dongusu (event loop) icinde Antigravity agent'i cagir
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(_run_antigravity_agent(prompt, system_instruction))
-            loop.close()
-            return result
+            from core.openclaw_brain import openclaw_brain
+            full_prompt = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt
+            result = openclaw_brain.ask(full_prompt)
+            if result and not result.startswith("⚠️"):
+                return result
         except Exception as e:
-            logger.warning(f"OpenClaw (Antigravity) motoru basarisiz oldu, fallback devrede: {e}")
+            logger.warning(f"OpenClaw Brain çağrısı başarısız, Gemini fallback devrede: {e}")
 
-    # Fallback: Mevcut saf Gemini REST orkestrasyonu (Resim destekli)
+    # 2. Fallback: Gemini REST (Resim veya OpenClaw çevrimdışı durumu)
     api_key = _get_api_key()
     if not api_key:
         return ""

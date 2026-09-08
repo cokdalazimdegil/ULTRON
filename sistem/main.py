@@ -38,11 +38,13 @@ def start_server(token):
     env["PYTHONIOENCODING"] = "utf-8"
     env["ULTRON_WEB_TOKEN"] = token  # Server uses this token for auth
     
+    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     server_process = subprocess.Popen(
         [sys.executable, str(BASE_DIR / "jarvis_web" / "server.py"), "--port", "8765", "--no-ssl"],
         stdout=None,
         stderr=None,
-        env=env
+        env=env,
+        creationflags=flags
     )
 
 def start_agent(token):
@@ -53,11 +55,13 @@ def start_agent(token):
     env["ULTRON_WEB_TOKEN"] = token
     env["JARVIS_WEB_TOKEN"] = token
     
+    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     agent_process = subprocess.Popen(
         [sys.executable, str(BASE_DIR / "jarvis_web" / "agent.py"), "--server", "ws://127.0.0.1:8765", "--token", token],
         stdout=None,
         stderr=None,
-        env=env
+        env=env,
+        creationflags=flags
     )
 
 def main():
@@ -94,11 +98,13 @@ def main():
     if not is_web:
         server_args.append("--no-ssl")
 
+    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     server_process = subprocess.Popen(
         server_args,
         stdout=None,
         stderr=None,
-        env=env
+        env=env,
+        creationflags=flags
     )
     
     # Wait for server to fully start

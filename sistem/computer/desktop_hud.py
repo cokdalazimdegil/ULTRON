@@ -552,8 +552,8 @@ class DesktopHUD:
         self._conn_lbl.configure(fg=OK_COLOR if ok else ERR_COLOR)
         if ok != self._conn_state:
             if ok:
-                self._log("ok", "● Sunucu bağlantısı kuruldu.")
-                self._set_status("HAZIR")
+                self._log("ok", "● Sunucu bağlantısı kuruldu. 🦞 OpenClaw Beyin Aktif.")
+                self._set_status("🦞 OPENCLAW BEYİN · HAZIR")
             else:
                 self._log("err", "● Sunucu bağlantısı koptu — yeniden bağlanılıyor…")
                 self._set_status("ÇEVRİMDIŞI · yeniden deneniyor")
@@ -744,13 +744,18 @@ class DesktopHUD:
 
     def _handle_message(self, raw):
         self._last_rx = time.monotonic()
+        if isinstance(raw, bytes):
+            # Gemini Live API ses paketleri (binary PCM) — metin arayüzüne yazılmamalı
+            return
         try:
             data = json.loads(raw)
         except Exception:
-            self._msg_queue.put(("response", str(raw)[:800]))
+            if isinstance(raw, str) and raw.strip():
+                self._msg_queue.put(("response", raw[:800]))
             return
         if not isinstance(data, dict):
-            self._msg_queue.put(("response", str(data)[:800]))
+            if isinstance(data, str) and data.strip():
+                self._msg_queue.put(("response", str(data)[:800]))
             return
 
         mtype = str(data.get("type", "")).lower()

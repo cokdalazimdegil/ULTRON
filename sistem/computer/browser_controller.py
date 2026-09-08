@@ -19,39 +19,74 @@ from computer.app_controller import is_app_running
 logger = logging.getLogger("ultron.computer.browser_controller")
 
 
+def _find_chrome_exe() -> str | None:
+    import os
+    import shutil
+    candidates = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return shutil.which("chrome") or shutil.which("google-chrome")
+
+
 def browser_open(url: str) -> tuple[bool, str]:
-    """Web tarayıcısında belirtilen adresi açar."""
+    """Web tarayıcısında (özellikle Google Chrome) belirtilen adresi açar."""
     target_url = url.strip()
     if not target_url.startswith(("http://", "https://")):
         target_url = f"https://{target_url}"
 
     try:
-        webbrowser.open(target_url, new=2)
-        time.sleep(1.0)
-        # Chrome, Edge veya genel browser çalışıyor mu kontrol et
-        running = is_app_running("chrome") or is_app_running("edge") or is_app_running("browser")
-        if running:
-            return True, f"✓ Tarayıcıda '{target_url}' başarıyla açıldı ve doğrulandı."
-        return True, f"✓ '{target_url}' adresi açılmak üzere varsayılan tarayıcıya iletildi."
+        chrome_exe = _find_chrome_exe()
+        opened = False
+        if chrome_exe:
+            import subprocess
+            flags = subprocess.CREATE_NO_WINDOW if subprocess.os.name == "nt" else 0
+            subprocess.Popen([chrome_exe, target_url], creationflags=flags)
+            opened = True
+        if not opened:
+            webbrowser.open(target_url, new=2)
+
+        time.sleep(0.8)
+        try:
+            from computer.window_manager import focus_window
+            focus_window("Chrome") or focus_window("Google Chrome") or focus_window("Browser")
+        except Exception:
+            pass
+
+        return True, f"Chrome tarayıcısında '{target_url}' başarıyla açıldı."
     except Exception as e:
         logger.error(f"Tarayici acma hatasi: {e}")
         return False, f"Tarayıcı açılamadı: {e}"
 
 
 def browser_search(query: str, engine: str = "google") -> tuple[bool, str]:
-    """Arama motorunda arama yapar."""
+    """Arama motorunda veya e-ticaret sitelerinde arama yapar."""
     clean_q = query.strip()
-    encoded = urllib.parse.quote_plus(clean_q)
+    clean_lower = clean_q.lower()
+    eng = (engine or "google").lower().strip()
 
-    eng = engine.lower()
-    if eng == "bing":
-        url = f"https://www.bing.com/search?q={encoded}"
+    import re
+    if eng == "trendyol" or "trendyol" in clean_lower:
+        clean_name = re.sub(r'\btrendyol(\'?da|\'de|\'te|\'tan|\'den)?\b', '', clean_q, flags=re.IGNORECASE).strip() or clean_q
+        url = f"https://www.trendyol.com/sr?q={urllib.parse.quote_plus(clean_name)}"
+    elif eng == "amazon" or "amazon" in clean_lower:
+        clean_name = re.sub(r'\bamazon(\'?da|\'de|\'te|\'tan|\'den)?\b', '', clean_q, flags=re.IGNORECASE).strip() or clean_q
+        url = f"https://www.amazon.com.tr/s?k={urllib.parse.quote_plus(clean_name)}"
+    elif eng == "hepsiburada" or "hepsiburada" in clean_lower:
+        clean_name = re.sub(r'\bhepsiburada(\'?da)?\b', '', clean_q, flags=re.IGNORECASE).strip() or clean_q
+        url = f"https://www.hepsiburada.com/ara?q={urllib.parse.quote_plus(clean_name)}"
+    elif eng == "bing":
+        url = f"https://www.bing.com/search?q={urllib.parse.quote_plus(clean_q)}"
     elif eng == "duckduckgo":
-        url = f"https://duckduckgo.com/?q={encoded}"
+        url = f"https://duckduckgo.com/?q={urllib.parse.quote_plus(clean_q)}"
     elif eng == "youtube":
-        url = f"https://www.youtube.com/results?search_query={encoded}"
+        url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(clean_q)}"
     else:
-        url = f"https://www.google.com/search?q={encoded}"
+        url = f"https://www.google.com/search?q={urllib.parse.quote_plus(clean_q)}"
 
     return browser_open(url)
 

@@ -93,3 +93,8 @@ sistem/actions/workspace/token.json
 sistem/actions/workspace/credentials.json
 *.wav
 *.session
+*.msi
+transcripts/
+sistem/transcripts/
+*.png
+!sistem/jarvis_web/**/*.png
