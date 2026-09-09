@@ -18,11 +18,13 @@ from app_config import get_app_config_value
 
 logger = logging.getLogger("ultron.orchestrator.gemini_reasoning")
 
-PRO_MODELS = ("gemini-3.6-flash",)
-FLASH_MODELS = ("gemini-3.6-flash",)
+PRO_MODELS = ("gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash")
+FLASH_MODELS = ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest")
 
 def _get_api_key() -> str:
     key = str(get_app_config_value("gemini_api_key", "") or "").strip()
+    if not key:
+        key = str(os.environ.get("GEMINI_API_KEY", "") or "").strip()
     if not key:
         logger.warning("gemini_api_key eksik, reasoning basarisiz olabilir.")
     return key
@@ -52,8 +54,9 @@ def query_gemini_reasoning(
     image_bytes: Optional[bytes] = None,
     image_mime: str = "image/jpeg"
 ) -> str:
-    # 1. Görsel analiz yoksa OpenClaw otonom AI beynini kullan
-    if not image_bytes:
+    # 1. JSON veya ReAct ajanlığı gerekmiyorsa ve görsel yoksa OpenClaw AI beynini kullan
+    is_strict_json = any(k in system_instruction.lower() for k in ("json", "react", "katı", "formatında"))
+    if not image_bytes and not is_strict_json:
         try:
             from core.openclaw_brain import openclaw_brain
             full_prompt = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt

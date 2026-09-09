@@ -72,6 +72,7 @@ class ScreenAwarenessEngine:
         self._last_hash: int | None = None
         self._last_capture_time: float = 0.0
         self._last_context: VisualScreenContext | None = None
+        self._last_ui_elements: list[UIElementBox] = []
 
     def calculate_hamming_distance(self, hash1: int, hash2: int) -> int:
         """İki 64-bit perceptual hash arasındaki Hamming mesafesini hesaplar."""
@@ -94,23 +95,36 @@ class ScreenAwarenessEngine:
             return ChangeSeverity.MAJOR_CHANGE, dist
 
     def detect_ui_elements(self, image: Image.Image) -> list[UIElementBox]:
-        """OpenCV ile ekrandaki buton, giriş kutusu ve pencerelerin konumlarını tespit eder."""
+        """OpenCV ile ekrandaki buton, giriş kutusu ve pencerelerin konumlarını tespit eder (Optimize)."""
         try:
-            img_np = np.array(image.convert("RGB"))
-            gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            orig_w, orig_h = image.size
+            # Yüksek çözünürlüklü ekranlarda (1080p/4K) CPU yükünü düşürmek için ölçeklendir
+            max_dim = 1280
+            if orig_w > max_dim or orig_h > max_dim:
+                scale = max_dim / float(max(orig_w, orig_h))
+                new_w = max(1, int(orig_w * scale))
+                new_h = max(1, int(orig_h * scale))
+                img_resized = image.resize((new_w, new_h), Image.Resampling.BILINEAR)
+                inv_scale = 1.0 / scale
+            else:
+                img_resized = image
+                inv_scale = 1.0
+
+            # Doğrudan L (Grayscale) formatına çevirerek bellek ve CPU tasarrufu sağla
+            img_np = np.array(img_resized.convert("L"))
+            blurred = cv2.GaussianBlur(img_np, (5, 5), 0)
             edges = cv2.Canny(blurred, 40, 140)
 
             contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             elements: list[UIElementBox] = []
 
-            h, w = gray.shape
+            h, w = img_np.shape
             for cnt in contours:
                 x, y, bw, bh = cv2.boundingRect(cnt)
                 area = bw * bh
 
                 # Filtreleme: Gürültüleri ve tam ekran boyutlarını ayıkla
-                if (24 <= bw <= 700) and (14 <= bh <= 250) and (area < (w * h * 0.45)):
+                if (20 <= bw <= 700) and (12 <= bh <= 250) and (area < (w * h * 0.45)):
                     aspect_ratio = bw / float(bh)
                     if 1.5 <= aspect_ratio <= 8.0 and bh <= 60:
                         elem_type = "button"
@@ -121,14 +135,19 @@ class ScreenAwarenessEngine:
                     else:
                         elem_type = "ui_box"
 
+                    real_x = int(round(x * inv_scale))
+                    real_y = int(round(y * inv_scale))
+                    real_bw = int(round(bw * inv_scale))
+                    real_bh = int(round(bh * inv_scale))
+
                     elements.append(UIElementBox(
                         element_type=elem_type,
-                        x=int(x),
-                        y=int(y),
-                        width=int(bw),
-                        height=int(bh),
-                        center_x=int(x + bw // 2),
-                        center_y=int(y + bh // 2),
+                        x=real_x,
+                        y=real_y,
+                        width=real_bw,
+                        height=real_bh,
+                        center_x=int(real_x + real_bw // 2),
+                        center_y=int(real_y + real_bh // 2),
                         confidence=0.85
                     ))
 
@@ -152,8 +171,12 @@ class ScreenAwarenessEngine:
         win_info = get_active_window_info()
         vis_windows = list_visible_windows()
 
-        # UI Elementleri
-        ui_elements = self.detect_ui_elements(img)
+        # UI Elementleri — Ekran değişmemişse önceki tespiti koru (CPU kurtarır)
+        if severity == ChangeSeverity.NO_CHANGE and not force_full_analysis and self._last_ui_elements:
+            ui_elements = self._last_ui_elements
+        else:
+            ui_elements = self.detect_ui_elements(img)
+            self._last_ui_elements = ui_elements
 
         # Modal Dialog ve Hata Kontrolü
         active_title = win_info.get("title", "")

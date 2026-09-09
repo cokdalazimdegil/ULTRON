@@ -37,6 +37,15 @@ class DaemonManager:
             except Exception as e:
                 logger.error(f"[DaemonManager] {daemon['name']} durdurulamadı: {e}")
 
+        # Companion mode çalışıyorsa durdur
+        try:
+            from actions.companion_mode import companion_engine
+            if companion_engine.is_running():
+                companion_engine.stop()
+                logger.info("[DaemonManager] Companion Mode durduruldu.")
+        except Exception:
+            pass
+
 daemon_manager = DaemonManager()
 
 # --- Modülleri İçe Aktar ve Kaydet ---
@@ -123,4 +132,35 @@ try:
         "OpenClaw Brain (Otonom AI Gateway Motoru)"
     )
 except Exception: pass
+
+# Presence Engine — Varlık Durum Makinesi
+try:
+    from core.presence_engine import presence_engine
+    daemon_manager.register(
+        presence_engine.start,
+        presence_engine.stop,
+        "Presence Engine (Varlık Durum Makinesi)"
+    )
+except Exception: pass
+
+# Geofence Engine — Coğrafi Sınır ve Konum Motoru
+try:
+    from core.geofence_engine import geofence_engine
+    daemon_manager.register(
+        geofence_engine.start,
+        geofence_engine.stop,
+        "Geofence Engine (Coğrafi Sınır Motoru)"
+    )
+except Exception: pass
+
+# Home Assistant Bridge — Akıllı Ev Çift Yönlü Köprü
+try:
+    from core.ha_bridge import ha_bridge
+    daemon_manager.register(
+        ha_bridge.start,
+        ha_bridge.stop,
+        "Home Assistant Bridge (Akıllı Ev Köprüsü)"
+    )
+except Exception: pass
+
 

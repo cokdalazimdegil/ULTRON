@@ -89,8 +89,28 @@ class SwarmManager:
                 f"Görevi 'FINISH' ile bitirirken message kısmına ne yaptığını ve bir sonraki ajana devrettiğin notu yaz."
             )
             
+            # Swarm Reporter kaydı
+            task_id = None
+            try:
+                from core.swarm_reporter import swarm_reporter, TASK_RUNNING
+                task_id = swarm_reporter.register_task(
+                    agent_name=f"{agent_role} Agent",
+                    description=sub_task,
+                    status=TASK_RUNNING,
+                    progress=int((i - 1) / max(1, len(tasks)) * 100)
+                )
+            except Exception:
+                pass
+
             task_obj = TaskEngine.create_task(prompt, owner=f"Swarm - {agent_role}")
             output = TaskEngine.execute_task_sync(task_obj)
+
+            if task_id:
+                try:
+                    from core.swarm_reporter import swarm_reporter
+                    swarm_reporter.complete_task(task_id, success=True, summary=str(output)[:120])
+                except Exception:
+                    pass
             
             results.append({
                 "agent": agent_role,

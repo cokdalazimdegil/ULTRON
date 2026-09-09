@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#ff4422">
-  <meta name="description" content="ULTRON — Kişisel yapay zeka asistanı">
+  <meta name="description" content="ULTRON — Üstün Otonom Bilgisayar Zekası ve Kişisel Yapay Zekâ Asistanı">
 
   <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
@@ -15,7 +15,12 @@
   <meta name="apple-mobile-web-app-title" content="ULTRON">
   <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 
-  <title>U.L.T.R.O.N</title>
+  <!-- Google Fonts: Outfit, Plus Jakarta Sans, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <title>U.L.T.R.O.N // NEURAL CORE</title>
   <link rel="stylesheet" href="/static/style.css">
   
   <script src="/static/lib/qrcode.min.js"></script>
@@ -35,7 +40,6 @@
         navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
           .then(reg => {
             console.log('[ULTRON] Service Worker kayıtlı:', reg.scope);
-            // Yeni SW hazır olunca güncelle
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (newWorker) {
@@ -57,82 +61,137 @@
     window.onerror = function(msg, url, lineNo, columnNo, error) {
       var log = document.getElementById('log');
       if (log) {
-        log.innerHTML += '<div style="color:red; background:black; padding:5px; margin:2px; font-family:monospace; z-index:9999; position:relative;">ERROR: ' + msg + '<br>Line: ' + lineNo + '</div>';
+        log.innerHTML += '<div style="color:#ff3344; background:rgba(0,0,0,0.85); border-left:3px solid #ff3344; padding:8px 12px; margin:4px 0; font-family:monospace; font-size:11px; z-index:9999; border-radius:4px;">[HATA]: ' + msg + ' (Satır: ' + lineNo + ')</div>';
       }
       return false;
     };
   </script>
-  <div class="hud-vignette"></div>
-  <div class="hud-grain"></div>
-  <div class="hud-scanlines"></div>
 
+  <!-- Arka Plan Atmosferi (Sade, Derin ve Zarif) -->
+  <div class="hud-ambient-glow"></div>
+  <div class="hud-vignette"></div>
+
+  <!-- 3D Orb Sahnesi -->
   <div id="orb-container"></div>
 
-  <!-- HUD Top Left -->
+  <!-- HUD Üst Sol: Marka ve Durum -->
   <div id="hud-top-left">
-    <div class="brand">U.L.T.R.O.N <span class="sub">GLOBAL CORE</span></div>
-    <div class="status-row">
-      <div id="status" class="status-indicator">STANDBY</div>
+    <div class="brand">
+      <span class="brand-text">U.L.T.R.O.N</span>
+      <span class="sub">NEURAL CORE</span>
     </div>
-    <!-- Satellite Agent Orbs Floating HUD Bar -->
+    <div class="status-row">
+      <div id="status" class="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-label">STANDBY</span>
+      </div>
+    </div>
+    <!-- Aktif Uydu Ajan Barı -->
     <div id="active-agents-bar" class="active-agents-bar"></div>
   </div>
 
-  <!-- HUD Top Right -->
+  <!-- HUD Üst Sağ: Kontrol Barı ve Görselleştirici -->
   <div id="hud-top-right">
     <div class="top-actions">
-      <!-- QR Code Mobile Connect Button -->
-      <button id="btn-qr-modal" class="btn-hud-action" title="Telefondan Bağlan (QR Kod Aç)">
-        📱 QR BAĞLANTI
+      <!-- Ses Spektrum Kapsülü -->
+      <div class="visualizer-capsule" title="Canlı Ses Seviyesi">
+        <canvas id="audio-visualizer" width="96" height="24"></canvas>
+      </div>
+
+      <!-- QR Uplink Butonu -->
+      <button id="btn-qr-modal" class="btn-hud-action" title="Telefondan Bağlan (QR Kod)">
+        <span class="btn-icon">📱</span>
+        <span class="btn-text">UPLINK</span>
       </button>
-      <!-- Fullscreen Toggle Button -->
-      <button id="btn-fullscreen" class="btn-hud-action" title="Tam Ekran Modunu Aç / Kapat (F11)">
-        ⛶ TAM EKRAN
+
+      <!-- Companion (Arkadaş) Modu Butonu -->
+      <button id="btn-companion-toggle" class="btn-hud-action" onclick="toggleCompanionMode()" title="Arkadaş Modu (Oyun & Eğlence İzleyici)">
+        <span class="btn-icon">🎮</span>
+        <span class="btn-text">COMPANION</span>
+        <span id="companion-dot" class="companion-dot hidden"></span>
       </button>
-      <!-- Audio Visualizer Canvas -->
-      <canvas id="audio-visualizer" width="300" height="40" style="margin-left:15px; border-radius:4px; opacity:0.8;"></canvas>
+
+      <!-- Ajan Ağı Konsolu Butonu -->
+      <button id="btn-swarm-toggle" class="btn-hud-action" onclick="toggleSwarmConsole()" title="Ajan Ağı Konsolu">
+        <span class="btn-icon">🕸</span>
+        <span class="btn-text">AJANLAR</span>
+        <span id="swarm-dot" class="swarm-dot hidden"></span>
+      </button>
+
+      <!-- Sistem Logları Konsolu Butonu -->
+      <button id="btn-system-logs-toggle" class="btn-hud-action" onclick="toggleSystemLogs()" title="ULTRON Sistem ve Olay Logları">
+        <span class="btn-icon">📜</span>
+        <span class="btn-text">LOGLAR</span>
+      </button>
+
+      <!-- Tam Ekran Butonu -->
+      <button id="btn-fullscreen" class="btn-hud-action icon-only" onclick="toggleFullscreen()" title="Tam Ekran (F11)">
+        ⛶
+      </button>
     </div>
-
-
-
   </div>
 
-  <!-- Picture-in-Picture Camera (Far Top-Right Corner) -->
+  <!-- Canlı Kamera (Picture-in-Picture) -->
   <div id="cam-wrap" class="hidden">
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="hand-canvas" width="640" height="480"></canvas>
-    <span class="cam-live">● CAM LIVE</span>
+    <span class="cam-live">● CANLI</span>
   </div>
 
-  <!-- Collapsible Chat Center Window -->
+  <!-- Katlanabilir Sohbet Konsolu -->
   <div id="hud-center">
     <div id="log-container" class="collapsed">
       <div class="log-header">
-        <div class="log-title">⚡ NEURAL INTERFACE // CONSOLE</div>
+        <div class="log-title">
+          <span class="log-title-icon">⚡</span>
+          <span>NEURAL INTERFACE // TERMINAL</span>
+        </div>
         <button id="btn-close-log" class="log-header-btn" title="Kapat">✕</button>
       </div>
       <div id="log"></div>
     </div>
   </div>
 
-  <!-- Floating Toast Subtitle when Chat is collapsed -->
+  <!-- Yüzen Toast Bildirimi (Sohbet Kapalıyken) -->
   <div id="hud-toast" class="hud-toast hidden"></div>
 
-  <!-- Main Bottom Controls -->
+  <!-- Alt Komut Adası (Floating Command Island) -->
   <div id="hud-bottom">
     <div class="main-controls">
-      <button id="btn-mic" class="ctl">🎙 MIC</button>
-      <button id="btn-toggle-log" class="ctl" title="Sohbet Terminalini Aç/Kapat">💬 CHAT</button>
+      <!-- Mikrofon Ana Butonu -->
+      <button id="btn-mic" class="ctl ctl-mic" title="Mikrofon Dinlemeyi Başlat / Durdur">
+        <div class="mic-wave-ring"></div>
+        <span class="mic-icon">🎙</span>
+        <span class="mic-label">DİNLE</span>
+      </button>
+
+      <!-- Metin Komut Formu -->
       <form id="text-form">
-        <input id="text-input" type="text" placeholder="Awaiting manual input..." autocomplete="off">
-        <button type="submit">SEND</button>
+        <div class="input-wrapper">
+          <input id="text-input" type="text" placeholder="Bir komut verin veya soru sorun..." autocomplete="off" spellcheck="false">
+          <button type="submit" id="btn-submit-cmd" class="btn-submit" title="Gönder">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
       </form>
-      <button id="btn-cam" class="ctl">📷 CAM</button>
+
+      <!-- Sohbet Konsolu Butonu -->
+      <button id="btn-toggle-log" class="ctl ctl-icon" title="Sohbet Geçmişini Göster/Gizle">
+        <span class="ctl-emoji">💬</span>
+      </button>
+
+      <!-- Kamera Aç/Kapat Butonu -->
+      <button id="btn-cam" class="ctl ctl-icon" title="Kamera Görüntüsünü Aç/Kapat">
+        <span class="ctl-emoji">📷</span>
+      </button>
     </div>
     <div id="build-stamp"></div>
   </div>
 
-  <!-- QR Code Connection Modal -->
+  <!-- QR Bağlantı Modalı -->
   <div id="qr-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
@@ -150,7 +209,7 @@
         </div>
 
         <div id="qr-status-msg" class="qr-info-text">
-          Telefonunuzun kamerasıyla bu QR kodu okutarak Ultron'a anında bağlanabilir, mikrofon ve kamera ile konuşabilirsiniz.
+          Telefonunuzun kamerasıyla bu QR kodu okutarak ULTRON'a anında bağlanabilir, sesli ve görüntülü sohbet edebilirsiniz.
         </div>
 
         <div class="qr-link-box">
@@ -159,14 +218,14 @@
         </div>
 
         <div class="qr-hints">
-          <div id="qr-hint-text">🌐 Cloudflare tüneliyle SSL sertifikası doğrudan geçerlidir. Her yerden bağlanabilirsiniz.</div>
+          <div id="qr-hint-text">🌐 Cloudflare tüneliyle güvenli SSL bağlantısı aktiftir. Her yerden erişebilirsiniz.</div>
           <button id="btn-firewall-permission" class="btn-firewall" title="Windows Güvenlik Duvarı Kuralı Ekle">🛡️ Güvenlik Duvarı İzni Ver</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Public key screen -->
+  <!-- API Anahtar Giriş Ekranı (Public Mod) -->
   <div id="key-screen" class="hidden">
     <div class="key-box">
       <div class="key-title">⚡ U.L.T.R.O.N CORE</div>
@@ -174,24 +233,22 @@
       <input id="key-input" type="password" placeholder="API Key" autocomplete="off" spellcheck="false">
       <button id="key-save">INITIALIZE</button>
       <a class="key-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Acquire Key ↗</a>
-      <div class="key-note">Local storage only. No transmission to external servers.</div>
+      <div class="key-note">Yerel depolamada saklanır. Dış sunuculara iletilmez.</div>
     </div>
   </div>
 
-  <!-- ╔════════════════════════════════════════════════════════════╗ -->
-  <!-- ║  İNTERAKTİF RAPOR GÖRÜNTÜLEYİCİ MODALI  — V19         ║ -->
-  <!-- ╚════════════════════════════════════════════════════════════╝ -->
+  <!-- Rapor Görüntüleyici Modalı -->
   <div id="report-modal" class="modal-overlay hidden">
     <div class="modal-card report-card-wide">
       <div class="modal-header">
-        <div class="modal-title" id="report-modal-title">📋 RAPOR GÖRÜNTÜLEYİCİ</div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div class="modal-title" id="report-modal-title">📋 ARAŞTIRMA VE GÖREV RAPORU</div>
+        <div style="display:flex;gap:10px;align-items:center;">
           <button id="btn-download-report" class="btn-hud-action" title="Raporu İndir (.md)">⬇ İNDİR</button>
           <button id="btn-close-report" class="modal-close-btn" title="Kapat">✕</button>
         </div>
       </div>
       <div class="modal-body">
-        <div id="report-modal-meta" style="font-size:11px;color:#888;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,245,255,0.15);"></div>
+        <div id="report-modal-meta" class="report-meta"></div>
         <div id="report-modal-content" class="report-viewer-body"></div>
       </div>
     </div>
@@ -202,32 +259,57 @@
     <span id="report-notif-icon">📋</span>
     <span id="report-notif-text">Araştırma raporu hazır!</span>
     <button id="btn-open-report-notif" onclick="openReportFromNotification()">📂 Görüntüle</button>
-    <button onclick="document.getElementById('report-notification').classList.add('hidden')" style="background:none;border:none;color:#888;cursor:pointer;font-size:14px;padding:2px 6px;">✕</button>
+    <button onclick="document.getElementById('report-notification').classList.add('hidden')" class="report-notif-close">✕</button>
   </div>
 
-  <!-- ╔════════════════════════════════════════════════════════════╗ -->
-  <!-- ║  AGENT SWARM CONSOLE — Ajan Ağı Şeffaflık Paneli        ║ -->
-  <!-- ╚════════════════════════════════════════════════════════════╝ -->
+  <!-- Agent Swarm Konsolu -->
   <div id="swarm-console" class="swarm-console hidden">
     <div class="swarm-console-header">
-      <span>⚡ AGENT NETWORK</span>
+      <div class="swarm-title">
+        <span class="swarm-title-icon">⚡</span>
+        <span>OTONOM AJAN AĞI</span>
+      </div>
       <div class="swarm-header-right">
         <span id="swarm-active-count" class="swarm-active-badge">0 AKTİF</span>
         <button class="swarm-close-btn" onclick="toggleSwarmConsole()">✕</button>
       </div>
     </div>
     <div id="swarm-task-list" class="swarm-task-list">
-      <div class="swarm-empty-msg">Aktif ajan görevi yok.</div>
+      <div class="swarm-empty-msg">Aktif otonom ajan görevi bulunmuyor.</div>
     </div>
   </div>
 
-  <!-- Swarm Toggle Button (HUD'a eklenir) -->
-  <button id="btn-swarm-toggle" class="btn-swarm-hud" onclick="toggleSwarmConsole()" title="Ajan Ağı Konsolu">
-    <span class="swarm-icon">🕸</span>
-    <span id="swarm-dot" class="swarm-dot hidden"></span>
-  </button>
+  <!-- ULTRON Sistem Logları Modalı -->
+  <div id="system-logs-modal" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide system-logs-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="log-title-icon">📜</span>
+          <span>ULTRON // SİSTEM LOGLARI & TELEMETRİ</span>
+        </div>
+        <div class="logs-header-actions">
+          <button class="btn-hud-action btn-sm" onclick="clearSystemLogs()" title="Logları Temizle">🗑️ TEMİZLE</button>
+          <button class="btn-hud-action btn-sm" onclick="refreshSystemLogs()" title="Yenile">🔄 YENİLE</button>
+          <button class="modal-close-btn" onclick="toggleSystemLogs()" title="Kapat">✕</button>
+        </div>
+      </div>
+      <div class="logs-filter-bar">
+        <button class="log-filter-btn active" data-filter="ALL" onclick="filterSystemLogs('ALL')">TÜMÜ</button>
+        <button class="log-filter-btn" data-filter="EVENT" onclick="filterSystemLogs('EVENT')">EVENTLER</button>
+        <button class="log-filter-btn" data-filter="INFO" onclick="filterSystemLogs('INFO')">BİLGİ</button>
+        <button class="log-filter-btn" data-filter="WARNING" onclick="filterSystemLogs('WARNING')">UYARI</button>
+        <button class="log-filter-btn" data-filter="ERROR" onclick="filterSystemLogs('ERROR')">HATA</button>
+      </div>
+      <div class="modal-body logs-modal-body">
+        <div id="system-logs-terminal" class="system-logs-terminal">
+          <div class="system-log-line info">
+            <span class="log-t">[--:--:--]</span> <span class="log-l">[SİSTEM]</span> Log motoru başlatıldı.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/static/app.js"></script>
 </body>
 </html>
-

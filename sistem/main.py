@@ -64,6 +64,39 @@ def start_agent(token):
         creationflags=flags
     )
 
+_webview_window = None
+
+class PyWebviewApi:
+    """PyWebview JS API köprüsü: Fullscreen ve yerel pencere kontrolleri."""
+    def __init__(self, window=None):
+        global _webview_window
+        if window is not None:
+            _webview_window = window
+
+    def set_window(self, window):
+        global _webview_window
+        _webview_window = window
+
+    def toggle_fullscreen(self) -> bool:
+        global _webview_window
+        try:
+            if _webview_window:
+                _webview_window.toggle_fullscreen()
+                return bool(_webview_window.fullscreen)
+            return False
+        except Exception:
+            return False
+
+    def is_fullscreen(self) -> bool:
+        global _webview_window
+        try:
+            if _webview_window:
+                return bool(_webview_window.fullscreen)
+            return False
+        except Exception:
+            return False
+
+
 def main():
     if "--selftest" in sys.argv:
         raise SystemExit(0)
@@ -130,15 +163,20 @@ def main():
     
     print("[ULTRON] Sinematik 3D UI baslatiliyor...")
     
+    global _webview_window
+    api = PyWebviewApi()
     window = webview.create_window(
         "U.L.T.R.O.N", 
         url,
         fullscreen=True,
         easy_drag=True,
-        background_color="#000000"
+        background_color="#000000",
+        js_api=api
     )
+    _webview_window = window
     
     webview.start(private_mode=True, debug=False)
 
 if __name__ == "__main__":
     main()
+

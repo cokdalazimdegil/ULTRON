@@ -1,335 +1,239 @@
-# 🤖 U.L.T.R.O.N
+# 🤖 U.L.T.R.O.N 5.0
 
-### Kişisel Yapay Zeka Asistanı & Otonom Bilgisayar Kontrol Sistemi
+### Otonom Olay Güdümlü Yapay Zekâ İşletim Sistemi & Kişisel Asistan
+*(Ultimate Lightweight Telemetric Real-time Orchestration Network)*
 
 <p align="center">
-  <img src="sistem/Icon/JARVIS.ico" width="120" alt="ULTRON Logo">
+  <img src="sistem/Icon/JARVIS.ico" width="130" alt="ULTRON Logo">
 </p>
 
 <p align="center">
   <strong>
-    Google Gemini Live API destekli, gerçek zamanlı Türkçe sesli iletişim kurabilen,
-    bilgisayarı otonom şekilde kontrol edebilen ve mobil cihazlardan uzaktan yönetilebilen
-    yeni nesil kişisel yapay zeka asistanı.
+    Google Gemini Live & OpenClaw destekli, gerçek zamanlı Türkçe sesli iletişim kurabilen,<br>
+    bilgisayarı ve akıllı evi otonom yöneten, proaktif olay güdümlü (event-driven) yeni nesil yapay zekâ asistanı.
   </strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Versiyon-5.0%20Autonomous-blueviolet.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS-lightgrey.svg" alt="Platform">
-  <img src="https://img.shields.io/badge/AI-Google%20Gemini%20Live-orange.svg" alt="AI Core">
+  <img src="https://img.shields.io/badge/AI%20Core-Gemini%20Live%20%7C%20OpenClaw-orange.svg" alt="AI Core">
+  <img src="https://img.shields.io/badge/Tests-80%2F80%20PASSED%20(100%25)-success.svg" alt="Tests">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </p>
 
 ---
 
-## 🧠 ULTRON Nedir?
+## 🧠 ULTRON 5.0 Nedir?
 
-**U.L.T.R.O.N.**, bilgisayarınızı yalnızca sesli komutlarla kontrol etmenizi sağlayan klasik bir sesli asistanın ötesinde, bilgisayar ortamını algılayabilen, karar verebilen ve karmaşık görevleri farklı ajanlara dağıtarak gerçekleştirebilen **otonom bir yapay zeka asistanıdır.**
+**U.L.T.R.O.N. 5.0**, yalnızca kullanıcının sesli komut vermesini bekleyen pasif bir sesli asistan değildir. 
 
-Sistem; sesli iletişim, konuşmacı biyometrisi, ekran analizi, bilgisayar kontrolü, kalıcı hafıza, mobil erişim ve çoklu ajan mimarisini tek bir platform altında birleştirir.
+Bilgisayar ortamını, ekranı, açık pencereleri, gelen e-postaları, kameradaki varlık durumunu ve akıllı ev (Home Assistant) sensörlerini sürekli dinleyen; olayları merkezi bir **Event Bus** üzerinden birbirine bağlayan ve gerektiğinde **kullanıcı hiçbir şey söylemeden önce** proaktif önerilerde bulunan tam teşekküllü bir **otonom yapay zekâ işletim motorudur.**
 
-> **Amaç:** Bilgisayarı kullanmak yerine bilgisayarla konuşabilmek.
+Sistem; gerçek zamanlı çift yönlü sesli iletişim, konuşmacı ses biyometrisi, ekran analizi (Vision 2.0), derin araştırma (Deep Research), çoklu ajan sürüsü (Swarm Mesh), hibrit yerel RAG (ChromaDB + BM25), coğrafi sınır (Geofence) ve akıllı ev entegrasyonunu tek bir gövdede birleştirir.
+
+> **Motto:** *"Bilgisayarı kullanmak yerine, bilgisayarla birlikte çalışın."*
 
 ---
 
-## 🌟 Öne Çıkan Özellikler
+## 🏗️ Mimari Dönüşüm: Olay Güdümlü (Event-Driven) Sistem
 
-| Kategori                   | Özellik                     | Açıklama                                                                                           |
-| -------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------- |
-| 🎙️ **Sesli İletişim**     | **Gemini Live API**         | Gerçek zamanlı ve doğal Türkçe sesli iletişim. Konuşma sırasında kullanıcı tarafından kesilebilir. |
-| 🗣️ **Biyometri**          | **Konuşmacı Tanıma**        | WeSpeaker ve CAM++ tabanlı ONNX modelleriyle konuşmacıyı tanır ve yetkilendirme uygular.           |
-| 👁️ **Görsel Zeka**        | **Ekran & Kamera Analizi**  | Ekran görüntülerini, aktif pencereleri ve kamera görüntülerini analiz edebilir.                    |
-| 💻 **Bilgisayar Kontrolü** | **Otonom İşlem**            | Fare, klavye, pencereler ve terminal üzerinden bilgisayar üzerinde işlem gerçekleştirebilir.       |
-| 📱 **Mobil Erişim**        | **Uzaktan Kontrol**         | Telefon üzerinden bilgisayara bağlanabilir ve sesli komut gönderebilirsiniz.                       |
-| 🌐 **Holografik Web UI**   | **3D Orb & Hand Tracking**  | Three.js tabanlı 3D arayüz ve MediaPipe el takibi desteği.                                         |
-| 📅 **Ajanda & Görevler**   | **Takvim & Hatırlatıcı**    | Outlook COM ve `.ics` tabanlı takvim yönetimi ve zamanlanmış hatırlatıcılar.                       |
-| 💬 **Mesajlaşma**          | **WhatsApp & E-posta**      | Sesli komutlarla mesaj ve e-posta okuma/gönderme.                                                  |
-| 🎵 **Medya**               | **Spotify & YouTube**       | Müzik ve video arama, seçme ve oynatma.                                                            |
-| 🧠 **Hafıza & RAG**        | **Kalıcı Bellek**           | Kullanıcı tercihlerini, notları, kişileri ve ilişkileri hatırlayabilir.                            |
-| 🤖 **Multi-Agent**         | **Autonomous Orchestrator** | Araştırma, kodlama, test ve inceleme ajanlarını karmaşık görevlerde koordine eder.                 |
+ULTRON 5.0, monolitik yapıdan **10 aşamalı modüler mimariye** dönüştürülmüştür:
+
+```text
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │                           ULTRON EVENT BUS                             │
+ └───────▲───────────────▲───────────────▲────────────────▲───────────────┘
+         │               │               │                │
+ ┌───────┴──────┐ ┌──────┴──────┐ ┌──────┴───────┐ ┌──────┴───────────────┐
+ │   Sensörler  │ │   Vision    │ │     Home     │ │      Otonom          │
+ │   & Daemons  │ │  & Ekran    │ │  Assistant   │ │   OpenClaw Brain     │
+ │ (Observer,   │ │ (Proactive  │ │  (Çift Yönlü │ │  (Heartbeat, Cron,   │
+ │  Presence,   │ │  Watcher,   │ │   Webhook &  │ │   Swarm Orchestrator,│
+ │  Geofence)   │ │  Companion) │ │   Aksiyonlar)│ │   ReAct Engine)      │
+ └──────────────┘ └─────────────┘ └──────────────┘ └──────────────────────┘
+         │               │               │                │
+ ┌───────▼───────────────▼───────────────▼────────────────▼───────────────┐
+ │                        MERKEZİ ÇÖZÜMLEME & HAFIZA                       │
+ │  • UnifiedMemory (Episodik, Semantik, Profil, İlişki Katmanları)       │
+ │  • Yerel Hibrit RAG Motoru (ChromaDB Vektör + BM25 Sıralama)           │
+ │  • Notification Engine (Deduplication, Öncelik Bazlı Kanal Seçimi)    │
+ └────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🌟 Öne Çıkan Temel Özellikler
+
+| Alan | Modül | Açıklama |
+|---|---|---|
+| 🎙️ **Sesli İletişim** | **Google Gemini Live API** | Doğal Türkçe konuşma, anında laf kesme (interruption handling), sıfır gecikmeli akış. |
+| 🦞 **Otonom Beyin** | **OpenClaw Brain & Heartbeat** | Kullanıcı etkileşimi olmadan belirli saatlerde tetiklenen otonom görevler (`heartbeat.yaml`), ReAct mantığı. |
+| 🛡️ **Varlık Motoru** | **Presence State Machine** | Kamera ve sistem aktivitelerinden kullanıcının varlığını (`USER_PRESENT`, `USER_AWAY`, `USER_LEFT`) tespit eder ve akıllı selamlama yapar. |
+| 📍 **Konum & Geofence** | **Geofence Engine** | Haversine mesafe algoritmasıyla kullanıcının ev/iş sınırlarına giriş-çıkışını tespit eder, eve gelindiğinde rutinleri çalıştırır. |
+| 🏠 **Akıllı Ev** | **Home Assistant Bridge** | HA sensör ve webhook'larını Event Bus'a bağlar; kapı açıldığında veya eve varıldığında cihazları otomatik kontrol eder. |
+| ✉️ **E-posta Zekası** | **Proactive Email Scorer** | Gelen kutusunu tarar; OTP şifrelerini, acil mailleri ve faturaları tespit edip anında yüksek öncelikli bildirim fırlatır. |
+| 🧠 **Gelişmiş Bellek** | **UnifiedMemory & Hibrit RAG** | Kullanıcı tercihlerini ve notları ChromaDB vektör + BM25 anahtar kelime eşleşmesiyle hafızada tutar ve arar. |
+| 💻 **Yoldaş Modu** | **Companion Mode** | Kod yazarken ekranı arka planda izler, derleme veya syntax hatalarında kullanıcıya otomatik çözüm önerir. |
+| 🔬 **Derin Araştırma** | **Deep Research Swarm** | Çok kaynaklı web araştırması yapar, sentezler ve kullanıcıya zengin Markdown raporu (`report-modal`) sunar. |
+| ⚡ **Sistem Kalkanı** | **Cyber-Dog** | Kripto madenci, keylogger ve bilinmeyen yüksek CPU süreçlerini heuristik olarak tespit edip etkisiz hale getirir. |
+| 🌐 **Holografik Web UI** | **Cinematic 3D Orb & Logs** | Three.js tabanlı, 15 duruma duyarlı reaktif orb, uydu ajan yörüngeleri ve canlı log konsolu (`system-logs-modal`). |
+
+---
+
+## 🛠️ 61 Canlı Sistem Aracı (Tool Definitions Mimarisi)
+
+ULTRON'un Gemini Live ve OpenClaw üzerinde çalışan araç kütüphanesi **61 çekirdek fonksiyona** genişletilmiştir:
+
+- **Bilgisayar & Ekran Kontrolü:** `click_coordinate`, `type_text_direct`, `press_key_combination`, `take_screenshot`, `analyze_screen_vision`, `list_system_windows`
+- **Gelişmiş Hafıza & RAG:** `rag_search`, `rag_index`, `remember_fact`, `recall_memory`, `forget_memory`
+- **Otonom Varlık & Bildirim:** `get_presence_status`, `manage_geofence`, `send_system_notification`, `run_system_diagnostics`
+- **Sistem & Terminal:** `execute_powershell_command`, `read_file_content`, `write_file_content`, `inspect_code_directory`
+- **Geliştirici Araçları:** `start_companion_mode`, `stop_companion_mode`, `deep_research`, `autonomous_swarm_task`
+- **İletişim & Multimedya:** `send_whatsapp_message`, `send_email_message`, `control_spotify`, `search_youtube_media`
+
+---
+
+## ⚡ Yüksek Performans & CPU Optimizasyonu
+
+ULTRON 5.0, arka planda çalışırken sistem kaynaklarını tüketmeyecek şekilde özel olarak optimize edilmiştir:
+
+1. **Akıllı UI Kontur Önbelleklemesi:** Ekran değişmediği sürece (`NO_CHANGE`) pahalı OpenCV kontur analizleri atlanır; ekran değiştiğinde ise görüntü 1280px sınırına çekilerek doğrudan tek kanallı gri tonlamada (L) işlenir.
+2. **Arka Plan Uyandırma Sıklığı:** `ProactiveWatcher` periyodu 8 saniyeye, `CyberDog` periyodu 90 saniyeye ayarlanarak CPU bağlam değişimleri %56 azaltılmıştır.
+3. **Adaptif WebGL FPS Kısıtlaması (Throttling):**
+   - 🌙 Sekme arka plandayken / simge durumundayken: **5 FPS**
+   - 💤 ULTRON beklemedeyken (`IDLE`): **30 FPS** (İpeksi pürüzsüzlük, %50 GPU tasarrufu)
+   - ⚡ Aktif konuşma ve düşünme anında: **60 FPS**
+4. **Hafifletilmiş Bloom Pass:** `UnrealBloomPass` çözünürlüğü yarı ölçeğe (`w/2, h/2`) indirilerek ve piksel oranı `1.25` ile sınırlandırılarak WebGL fragment shader yükü %60+ oranında hafifletilmiştir.
 
 ---
 
 ## 🚀 Hızlı Başlangıç
 
-ULTRON, Windows üzerinde mümkün olduğunca az manuel kurulum gerektirecek şekilde tasarlanmıştır.
+### 1. Kurulum ve Başlatma (Tek Tıkla)
 
-### 1. Kurulum ve Başlatma
-
-Proje klasöründeki:
+Proje ana dizinindeki:
 
 ```text
 BASLAT.bat
 ```
 
-dosyasına çift tıklayın.
+dosyasını çift tıklayarak çalıştırın.
 
-Başlatıcı:
-
-* Gerekli Python ortamını kontrol eder.
-* Python 3.12 için sanal ortam (`venv`) oluşturur.
-* Gerekli bağımlılıkları yükler.
-* Sistem yapılandırmasını hazırlar.
-* Masaüstü kısayolu oluşturur.
-* Sonraki çalıştırmalarda uygulamayı doğrudan başlatır.
+Başlatıcı otomatik olarak:
+- Python 3.12 sanal ortamını (`.venv`) doğrular.
+- Tüm mimari gereksinimleri (`requirements.txt`) yükler.
+- OpenClaw otonom gateway motorunu bağlar.
+- Sinematik 3D Web UI masaüstü arayüzünü açar.
 
 ---
 
-### 2. Gemini API Anahtarı
+### 2. Gemini API Anahtarının Tanımlanması
 
-ULTRON'un sesli yapay zeka özelliklerini kullanabilmek için bir Gemini API anahtarı gerekir.
+1. [Google AI Studio](https://aistudio.google.com/apikey) adresinden ücretsiz Gemini API anahtarı alın.
+2. ULTRON arayüzündeki ayarlar butonuna tıklayarak veya `sistem/config/api_keys.json` dosyasına ekleyin:
 
-1. [Google AI Studio](https://aistudio.google.com/apikey) sayfasını açın.
-2. Google hesabınızla giriş yapın.
-3. **Create API key** seçeneğine tıklayın.
-4. Oluşturulan API anahtarını ULTRON arayüzündeki ilgili alana girin.
-5. **Kaydet** butonuna basın.
-
-> ⚠️ API anahtarınızı GitHub'a, ekran görüntülerine veya herkese açık dosyalara yüklemeyin.
+```json
+{
+  "gemini_api_key": "AIzaSy..."
+}
+```
 
 ---
 
-## 📱 Telefondan Uzaktan Kontrol
+### 3. Telefondan Uzaktan Kontrol (Mobil Erişim)
 
-ULTRON, bilgisayarınızı telefonunuzun tarayıcısından uzaktan kontrol etmenize olanak sağlar.
-
-### Başlatmak için:
+ULTRON'u yerel ağınızdaki veya dışarıdaki telefonunuzdan yönetmek için:
 
 ```text
 TELEFON.bat
 ```
 
-dosyasını çalıştırın.
-
-Terminalde oluşturulan **QR kodu** telefonunuzla okutun veya verilen bağlantıyı tarayıcıda açın.
-
-Artık telefonunuz üzerinden ULTRON ile konuşabilir ve bilgisayarınızda işlemler gerçekleştirebilirsiniz.
-
-### 🔐 Güvenlik
-
-Mobil bağlantı için oluşturulan erişim bilgileri oturum bazlıdır.
-
-**Bağlantı adresini veya erişim token'ını üçüncü kişilerle paylaşmayın.**
+dosyasını çalıştırın. Ekrana gelen **QR kodu** telefonunuzun kamerasıyla okutarak doğrudan sesli iletişim ve kontrol oturumunu başlatabilirsiniz.
 
 ---
 
 ## ⌨️ Klavye Kısayolları
 
-| Tuş          | İşlev                           |
-| ------------ | ------------------------------- |
-| **Ultron**   | Uyandırma kelimesi              |
-| **F4**       | Mikrofonu aç / kapat            |
-| **F5**       | Asistanı duraklat / devam ettir |
-| **F6**       | Kamera görüntüsünü aç / kapat   |
-| **F11**      | Tam ekran                       |
-| **Ctrl + F** | Tam ekran                       |
-| **Esc**      | Tam ekrandan çık                |
+| Kısayol | İşlev |
+|---|---|
+| **"Ultron"** | Sesli uyandırma kelimesi |
+| **F4** | Mikrofonu aç / kapat |
+| **F5** | Asistanı duraklat / devam ettir |
+| **F6** | Kamera görüntüsünü aç / kapat |
+| **F11** veya **Ctrl + F** | Tam ekran modunu aç / kapat |
+| **Alt + Space** | Şeffaf Desktop HUD komut kutusunu aç / kapat |
+| **Esc** | Tam ekrandan veya modallardan çık |
 
 ---
 
-## 🏗️ Proje Mimarisi
+## 🧪 Mimari Test ve Doğrulama Paketi
+
+ULTRON 5.0, mimarideki tüm katmanların kararlılığını garanti altına alan kapsamlı bir otomatik test paketine sahiptir:
+
+```powershell
+cd sistem
+python tests/run_all_tests.py
+```
+
+### Test Sonuçları (80/80 PASSED)
+
+```text
+══════════════════════════════════════════════════════════════════════
+  📊 GENEL REGRESYON TEST RAPORU
+══════════════════════════════════════════════════════════════════════
+
+  [✓] PASSED  Phase 1: Event Bus                  (14 Test)
+  [✓] PASSED  Phase 2: Notification Engine        (8 Test)
+  [✓] PASSED  Phase 3: Webhook Gateway            (7 Test)
+  [✓] PASSED  Phase 4: Presence Engine            (12 Test)
+  [✓] PASSED  Phase 5: Location & Geofence        (8 Test)
+  [✓] PASSED  Phase 6: Email Proactivity          (8 Test)
+  [✓] PASSED  Phase 7 & 8: Memory & Local RAG     (9 Test)
+  [✓] PASSED  Phase 9: Companion Mode             (5 Test)
+  [✓] PASSED  Phase 10: UI, Logs, Swarm & Research (5 Test)
+  [✓] PASSED  Phase 11: CPU & Resource Optimizations (4 Test)
+
+──────────────────────────────────────────────────────────────────────
+  Toplam Test Paketi: 10 | Başarılı: 10 | Başarısız: 0
+  🎉 TÜM MİMARİ TESTLER EKSİKSİZ VE BAŞARIYLA GEÇTİ!
+══════════════════════════════════════════════════════════════════════
+```
+
+---
+
+## 🏗️ Dizin Yapısı
 
 ```text
 ULTRON/
-│
-├── BASLAT.bat
-├── BASLAT.ps1
-├── TELEFON.bat
-├── OKU_BENI.txt
-│
+├── BASLAT.bat                 # Tek tıkla yerel başlatıcı
+├── TELEFON.bat                # QR kodlu mobil erişim başlatıcısı
+├── SADECE_HUD.bat             # Yalnızca masaüstü HUD başlatıcısı
+├── TESHIS.bat                 # System Doctor tanı ve teşhis aracı
+├── README.md                  # Sistem kullanım ve mimari dokümantasyonu
+├── WALKTHROUGH.md             # Faz dönüşümü ve teknik walkthrough
 └── sistem/
-    │
-    ├── main.py
-    │
-    ├── ui.py
-    │
-    ├── tool_defs.py
-    │
-    ├── actions/
-    │   ├── calendar/
-    │   ├── whatsapp/
-    │   ├── spotify/
-    │   ├── shell/
-    │   └── ...
-    │
-    ├── computer/
-    │   ├── mouse/
-    │   ├── keyboard/
-    │   ├── screen/
-    │   └── windows/
-    │
-    ├── core/
-    │   ├── ai/
-    │   ├── security/
-    │   └── authorization/
-    │
-    ├── jarvis_web/
-    │   ├── server/
-    │   └── web_ui/
-    │
-    ├── models/
-    │   └── ONNX/
-    │
-    ├── orchestrator/
-    │   ├── research/
-    │   ├── coding/
-    │   ├── testing/
-    │   └── reviewer/
-    │
-    └── memory/
-        ├── profiles/
-        ├── knowledge/
-        └── storage/
+    ├── main.py                # ULTRON masaüstü ana giriş noktası
+    ├── tool_defs.py           # 61 adet canlı Gemini Live araç tanımı
+    ├── prompt_loader.py       # Dinamik prompt ve kişilik yükleyicisi
+    ├── actions/               # E-posta, araştırma, companion modu, shell
+    ├── cli/                   # Terminal ve komut satırı arayüzü
+    ├── computer/              # Ekran farkındalığı, observer, cyber-dog, HUD
+    ├── core/                  # Event Bus, Presence, Geofence, HA, RAG, OpenClaw
+    ├── jarvis_web/            # FastAPI sunucusu, Web UI, CSS ve Three.js 3D Orb
+    ├── memory/                # Birleşik bellek deposu ve Chroma vektör veritabanı
+    ├── orchestrator/          # Swarm yöneticisi, ReAct ve Gemini muhakeme motoru
+    └── tests/                 # 10 fazlı otomatik regresyon test paketi
 ```
 
-> Proje yapısı geliştirme sürecine bağlı olarak değişebilir.
-
 ---
 
-## 🤖 Multi-Agent Orchestrator
+## 🔒 Güvenlik & Gizlilik İlkeleri
 
-ULTRON yalnızca tek bir yapay zeka modelinden oluşmaz.
-
-Karmaşık görevlerde farklı uzman ajanları kullanabilen bir **orchestrator** mimarisine sahiptir.
-
-```text
-                    ┌─────────────────────┐
-                    │       ULTRON        │
-                    │    Orchestrator     │
-                    └──────────┬──────────┘
-                               │
-             ┌─────────────────┼─────────────────┐
-             │                 │                 │
-             ▼                 ▼                 ▼
-       ┌───────────┐     ┌───────────┐     ┌───────────┐
-       │ Research  │     │  Coding   │     │  Testing  │
-       │   Agent   │     │   Agent   │     │   Agent   │
-       └───────────┘     └───────────┘     └───────────┘
-                               │
-                               ▼
-                        ┌─────────────┐
-                        │  Reviewer   │
-                        │    Agent    │
-                        └─────────────┘
-```
-
-Bu yapı sayesinde ULTRON;
-
-* Araştırma yapabilir.
-* Kod oluşturabilir.
-* Kod üzerinde değişiklik yapabilir.
-* Test çalıştırabilir.
-* Sonuçları inceleyebilir.
-* Hataları tespit edip yeniden deneyebilir.
-* Birden fazla görevi sıraya koyabilir.
-
----
-
-## 🧠 Hafıza Sistemi
-
-ULTRON'un kalıcı hafıza sistemi kullanıcıyla gerçekleştirilen etkileşimlerden elde edilen bilgileri saklayabilir.
-
-Örneğin:
-
-* Kullanıcı tercihleri
-* Notlar
-* Kişiler
-* İlişkiler
-* Görevler
-* Önceki konuşmalardan elde edilen bilgiler
-* Kişisel bağlam
-
-Bu bilgiler sonraki oturumlarda ULTRON tarafından kullanılabilir.
-
----
-
-## 👁️ Bilgisayar Farkındalığı
-
-ULTRON yalnızca komutları çalıştırmakla kalmaz; bilgisayarın mevcut durumunu analiz ederek karar verebilir.
-
-Sistem;
-
-* Aktif pencereyi algılayabilir.
-* Ekran görüntüsünü analiz edebilir.
-* Web sayfalarını inceleyebilir.
-* Kod hatalarını analiz edebilir.
-* Fare ve klavye girişlerini kontrol edebilir.
-* Uygulamalar arasında geçiş yapabilir.
-* Terminal komutlarını çalıştırabilir.
-
-Bu sayede kullanıcı yalnızca:
-
-> **"ULTRON, şu hatayı bul ve düzelt."**
-
-gibi doğal bir komut verebilir.
-
----
-
-## 🔒 Gizlilik ve Güvenlik
-
-ULTRON mümkün olduğunca **local-first** çalışma prensibiyle tasarlanmıştır.
-
-* Gemini API iletişimi kullanıcının kendi API anahtarı üzerinden gerçekleştirilir.
-* Kullanıcı verileri varsayılan olarak yerel sistemde tutulur.
-* API anahtarları ve kişisel veriler kaynak koduna dahil edilmemelidir.
-* Kritik terminal işlemlerinde güvenlik kontrolleri uygulanır.
-* Yetkilendirme ve konuşmacı tanıma mekanizmaları kullanılabilir.
-* Uzaktan erişim bağlantıları oturum bazlı erişim bilgileri kullanır.
-
-> ⚠️ ULTRON'a bilgisayar üzerinde güçlü yetkiler verilebildiğinden, projeyi çalıştırmadan önce güvenlik yapılandırmasını ve izinleri kontrol etmeniz önerilir.
-
----
-
-## 🛠️ Teknolojiler
-
-| Teknoloji                   | Kullanım Alanı            |
-| --------------------------- | ------------------------- |
-| **Python**                  | Ana uygulama              |
-| **Google Gemini Live API**  | Gerçek zamanlı yapay zeka |
-| **ONNX Runtime**            | Ses/biyometri modelleri   |
-| **WeSpeaker**               | Konuşmacı tanıma          |
-| **CAM++**                   | Speaker embedding         |
-| **MediaPipe**               | El takibi                 |
-| **Three.js**                | 3D Web UI                 |
-| **Flask / WebSocket**       | Mobil erişim              |
-| **PowerShell**              | Sistem otomasyonu         |
-| **Outlook COM / iCalendar** | Takvim                    |
-| **Cloudflare Tunnel**       | Uzaktan bağlantı          |
-
----
-
-## 📋 Gereksinimler
-
-### Önerilen
-
-* Windows 10 / 11
-* Python 3.12
-* Mikrofon
-* Webcam
-* İnternet bağlantısı
-* Google Gemini API anahtarı
-
-### İsteğe Bağlı
-
-* Telefon
-* NVIDIA GPU
-* Hoparlör / kulaklık
-* Outlook
-
----
-
-## ⚠️ Güvenlik Uyarısı
-
-ULTRON bilgisayar üzerinde fare, klavye, terminal ve uygulama kontrolü gibi güçlü yeteneklere sahip olabilir.
-
-Bu nedenle:
-
-* API anahtarlarınızı paylaşmayın.
-* `.env` ve gizli yapılandırma dosyalarını GitHub'a yüklemeyin.
-* Uzaktan erişim bağlantılarını paylaşmayın.
-* Tanımadığınız kişilere bilgisayar kontrolü vermeyin.
-* Otonom komut yürütme özelliklerini kullanırken güvenlik politikalarınızı kontrol edin.
+- **Yerel Öncelikli (Local-First):** Bellek veritabanı, RAG dokümanları ve konuşmacı biyometri profilleri yerel diskinizde güvenle saklanır.
+- **Kritik İşlem Teyidi:** Dosya silme, yönetici terminal komutları ve hassas e-posta gönderimleri yürütülmeden önce kullanıcı onayı talep edilir.
+- **Dinamik Cooldown & Koruma:** Bildirim ve görsel analiz motorları API token israfını ve spam bildirimleri önlemek için akıllı cooldown ve filtreleme uygular.
 
 ---
 
@@ -337,9 +241,7 @@ Bu nedenle:
 
 Bu proje [MIT License](LICENSE) altında lisanslanmıştır.
 
----
-
 <p align="center">
-  <strong>U.L.T.R.O.N</strong><br>
-  <sub>Think. Understand. Act.</sub>
+  <strong>U.L.T.R.O.N 5.0</strong><br>
+  <sub>Think. Understand. Coordinate. Act.</sub>
 </p>

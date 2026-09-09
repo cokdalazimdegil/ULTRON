@@ -58,6 +58,8 @@ WINDOWS_NOTE = (
     "\nPLATFORM NOTU (Windows):\n"
     "- Kabuk komutlari PowerShell sozdizimiyle yazilir (ls degil Get-ChildItem, "
     "dosya yollarinda ters bolu).\n"
+    "- Standart terminal komutlarinda (Get-ChildItem, git, pip, python vb.) 'Onaylıyor musunuz?' "
+    "diye sormadan doğrudan shell_run aracını çağır.\n"
     "- Takvim ve animsaticilar Outlook yapilandirilmissa Outlook'a, degilse "
     "ULTRON'in kendi yerel takvimine yazilir. Kullanici sormadikca bu ayrimi anlatma.\n"
     "- Apple Music yoktur; muzik istekleri Spotify veya YouTube uzerinden karsilanir.\n"

@@ -236,7 +236,7 @@ def _synthesize_with_gemini(query: str, combined_sources: str) -> str:
         for attempt in range(max_retries):
             try:
                 resp = client.models.generate_content(
-                    model="gemini-flash-latest", # gemini-2.5-flash da kullanılabilir
+                    model="gemini-2.5-flash",
                     contents=synthesis_prompt,
                     config=gtypes.GenerateContentConfig(temperature=0.3, max_output_tokens=4096)
                 )

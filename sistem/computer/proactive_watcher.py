@@ -146,7 +146,7 @@ class ProactiveWatcherEngine:
     Arka planda düşük CPU ile sistemi, ekranı ve kaynakları izleyen proaktif zeka motoru.
     """
 
-    def __init__(self, check_interval_sec: float = 3.5):
+    def __init__(self, check_interval_sec: float = 8.0):
         self.check_interval_sec = check_interval_sec
         self._running = False
         self._thread: Optional[threading.Thread] = None

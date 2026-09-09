@@ -469,7 +469,8 @@ def execute_tool(name: str, args: dict) -> str:
 
         if name == "start_companion_mode":
             from actions.companion_mode import companion_engine
-            return companion_engine.start()
+            interval = args.get("interval_sec")
+            return companion_engine.start(interval_sec=interval)
 
         if name == "stop_companion_mode":
             from actions.companion_mode import companion_engine
@@ -481,16 +482,31 @@ def execute_tool(name: str, args: dict) -> str:
             import threading
             
             def _run_autonomous():
-                from computer.task_executor import TaskEngine
                 if is_res:
-                    from computer.research_engine import execute_research_plan
-                    execute_research_plan(desc)
+                    try:
+                        from actions.research_engine import handle_deep_research
+                        report = handle_deep_research({"query": desc})
+                        from core.event_bus import bus
+                        from core.notification_engine import notification_engine, NotificationRequest
+                        from core.events import EventPriority
+                        bus.publish("ui_alert", f"📋 [ARAŞTIRMA TAMAMLANDI]: '{desc}' araştırması tamamlandı.")
+                        notification_engine.notify(NotificationRequest(
+                            title="📋 Araştırma Raporu Hazır",
+                            message=f"'{desc}' araştırması tamamlandı.",
+                            priority=EventPriority.NORMAL,
+                            source="research_agent",
+                            channels=["web_ui", "tts"]
+                        ))
+                    except Exception as e:
+                        from core.event_bus import bus
+                        bus.publish("ui_alert", f"⚠️ [ARAŞTIRMA HATASI]: '{desc}' araştırmasında hata: {e}")
                 else:
+                    from computer.task_executor import TaskEngine
                     task = TaskEngine.create_task(desc, owner="YARATICI")
                     TaskEngine.execute_task_sync(task)
                     
             threading.Thread(target=_run_autonomous, daemon=True).start()
-            return "Otonom görev arka planda başlatıldı."
+            return f"Otonom {'araştırma' if is_res else 'görev'} arka planda başlatıldı."
 
         if name == "emergency_stop":
             from computer.safety_manager import SafetyManager
@@ -567,6 +583,109 @@ def execute_tool(name: str, args: dict) -> str:
                 sender_name=args.get("sender_name", "Biri"),
             )
             return notify_pending_reply(draft)
+
+        if name == "rag_search":
+            query = args.get("query", "").strip()
+            limit = int(args.get("limit", 3) or 3)
+            try:
+                from core.local_rag_engine import local_rag
+                chunks = local_rag.search(query, limit=limit)
+                if not chunks:
+                    return f"'{query}' için yerel RAG bilgi tabanında kayıt bulunamadı."
+                formatted = [f"[{i+1}] (Doküman: {c.doc_id}, Skor: {c.score:.2f}):\n{c.text}" for i, c in enumerate(chunks)]
+                return "📚 Yerel RAG Arama Sonuçları:\n\n" + "\n\n---\n\n".join(formatted)
+            except Exception as err:
+                return f"RAG arama hatası: {err}"
+
+        if name == "rag_index":
+            title = args.get("title", "").strip()
+            content = args.get("content", "").strip()
+            category = args.get("category", "general").strip()
+            if not title or not content:
+                return "Hata: title ve content zorunludur."
+            try:
+                from core.local_rag_engine import local_rag
+                chunk_count = local_rag.index_document(title, content, metadata={"category": category})
+                return f"✅ '{title}' başlıklı doküman {chunk_count} parçaya ayrılarak yerel RAG bilgi tabanına başarıyla indekslendi."
+            except Exception as err:
+                return f"RAG indeksleme hatası: {err}"
+
+        if name == "get_presence_status":
+            try:
+                from core.presence_engine import presence_engine
+                info = presence_engine.get_state_info()
+                return (
+                    f"👤 Varlık Durumu: {info.get('current_state', 'Bilinmiyor')}\n"
+                    f"• Son Görülme: {info.get('last_seen_iso', 'Yok')}\n"
+                    f"• Varlık Süresi: {info.get('presence_duration_sec', 0)} saniye\n"
+                    f"• Karşılama İzni: {'Evet' if info.get('greeting_eligible') else 'Beklemede'}"
+                )
+            except Exception as err:
+                return f"Varlık durumu sorgulama hatası: {err}"
+
+        if name == "manage_geofence":
+            action = args.get("action", "list").lower().strip()
+            try:
+                from core.geofence_engine import geofence_engine
+                if action == "list":
+                    zones = geofence_engine.get_zones()
+                    if not zones:
+                        return "Tanımlı coğrafi sınır (geofence) bölgesi bulunmuyor."
+                    lines = [f"• {z['name']}: ({z['lat']:.4f}, {z['lng']:.4f}) - Yarıçap: {z['radius_meters']}m" for z in zones]
+                    return "📍 Kayıtlı Geofence Bölgeleri:\n" + "\n".join(lines)
+                elif action == "add":
+                    name_zone = args.get("name", "").strip()
+                    lat = float(args.get("latitude", 0.0))
+                    lng = float(args.get("longitude", 0.0))
+                    radius = float(args.get("radius_meters", 150.0))
+                    if not name_zone or (lat == 0.0 and lng == 0.0):
+                        return "Hata: Bölge adı, latitude ve longitude zorunludur."
+                    ok = geofence_engine.add_zone(name_zone, lat, lng, radius_meters=radius)
+                    return f"✅ '{name_zone}' bölgesi başarıyla kaydedildi." if ok else "Bölge eklenemedi."
+                elif action == "remove":
+                    name_zone = args.get("name", "").strip()
+                    ok = geofence_engine.remove_zone(name_zone)
+                    return f"🗑️ '{name_zone}' bölgesi silindi." if ok else f"'{name_zone}' bölgesi bulunamadı."
+                return f"Bilinmeyen geofence eylemi: {action}"
+            except Exception as err:
+                return f"Geofence yönetim hatası: {err}"
+
+        if name == "send_system_notification":
+            title = args.get("title", "Sistem").strip()
+            message = args.get("message", "").strip()
+            priority_str = args.get("priority", "normal").lower().strip()
+            try:
+                from core.notification_engine import notification_engine, NotificationRequest
+                from core.events import EventPriority
+                p_map = {
+                    "low": EventPriority.LOW,
+                    "normal": EventPriority.NORMAL,
+                    "high": EventPriority.HIGH,
+                    "critical": EventPriority.CRITICAL,
+                }
+                pri = p_map.get(priority_str, EventPriority.NORMAL)
+                notification_engine.notify(NotificationRequest(
+                    title=title,
+                    message=message,
+                    priority=pri,
+                    source="gemini_tool",
+                ))
+                return f"📢 '{title}' bildirimi ({priority_str.upper()}) başarıyla yayınlandı."
+            except Exception as err:
+                return f"Bildirim gönderme hatası: {err}"
+
+        if name == "run_system_diagnostics":
+            try:
+                from cli.doctor import run_diagnostics
+                import io
+                from contextlib import redirect_stdout
+                f = io.StringIO()
+                with redirect_stdout(f):
+                    passed, warns, fails = run_diagnostics()
+                output = f.getvalue()
+                return f"🏥 ULTRON Teşhis Raporu: {passed} Başarılı, {warns} Uyarı, {fails} Hata.\n\n" + output[-1500:]
+            except Exception as err:
+                return f"Teşhis çalıştırma hatası: {err}"
 
         return f"Bilinmeyen araç: {name}"
 

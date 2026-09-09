@@ -1,6 +1,6 @@
 """
-JARVIS — Gemini Live araç (tool) tanımları
-Masaüstü (main.py) ve web sunucusu (jarvis_web/server.py) ortak kullanır.
+ULTRON — Gemini Live Araç (Tool) Tanımları Mimarisi
+Masaüstü (main.py), web sunucusu (jarvis_web/server.py) ve otonom ajan ağı ortak kullanır.
 """
 
 TOOL_DECLARATIONS = [
@@ -312,7 +312,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "shell_run",
-        "description": "Bilgisayar terminalinde PowerShell, Cmd veya bash komutları çalıştırır. Dosya yönetimi, git işlemleri, python/node betikleri, ağ ve sistem durumunu sorgulama, paket yükleme veya herhangi bir komut çalıştırmak istediğinde kullan.",
+        "description": "Bilgisayar terminalinde PowerShell, Cmd veya bash komutları çalıştırır. Dosya yönetimi, git işlemleri, python/node betikleri, ağ ve sistem durumunu sorgulama, paket yükleme veya komut çalıştırmak istediğinde doğrudan kullan. ÖNEMLİ: Bu aracı çağırırken kullanıcıya 'onaylıyor musunuz' veya 'çalıştırayım mı' diye sorma; aracı çağırdığın an komut anında yürütülür. Standart komutları doğrudan çalıştır. Yalnızca kritik ve sistemi çökertebilecek tehlikeli komutlarda bu aracı çağırmadan önce sözlü onay iste.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -620,7 +620,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "file_operations",
-        "description": "Dosya ve dizin yönetimi yapar: dosya içeriğini okur (read), dosya oluşturur veya üzerine yazar (write), dosyaya metin ekler (append), klasör içeriğini listeler (list) veya dosya arar (search). Kullanıcı 'şu dosyayı oku', 'kod yaz ve dosyaya kaydet', 'klasördekileri listele' dediğinde kullan.",
+        "description": "Dosya ve dizin yönetimi yapar: dosya içeriğini okur (read), dosya oluşturur veya üzerine yazar (write), dosyaya metin ekler (append), klasör içeriğini listeler (list) veya dosya arar (search). Kullanıcı 'şu dosyayı oku', 'kod yaz ve dosyaya kaydet', 'klasördekileri listele' dediğinde doğrudan çalıştır; gereksiz teyit sorma.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -800,7 +800,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "computer_control",
-        "description": "Masaüstünde fare, klavye, pencere ve uygulama kontrollerini gerçekleştirir. grounding_mode=true ile Gemini Vision ekrandaki hedef elemanı piksel düzeyinde otomatik bulur ve tıklar — koordinat bilmene gerek kalmaz.",
+        "description": "Masaüstünde fare, klavye, pencere ve uygulama kontrollerini gerçekleştirir. grounding_mode=true ile Gemini Vision ekrandaki hedef elemanı piksel düzeyinde otomatik bulur ve tıklar — koordinat bilmene gerek kalmaz. Bu aracı çağırırken kullanıcıya 'onaylıyor musunuz' diye sorma, doğrudan yürüt.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -1124,6 +1124,144 @@ TOOL_DECLARATIONS = [
                 "query": {
                     "type": "STRING",
                     "description": "OpenClaw beynine yöneltilecek detaylı soru, komut, araştırma konusu veya görev."
+                }
+            },
+            "required": [
+                "query"
+            ]
+        }
+    },
+    {
+        "name": "rag_search",
+        "description": "Yerel RAG bilgi tabanında (ChromaDB + BM25 hibrit arama) semantik arama yapar. İndekslenmiş dokümanlar, teknik notlar, sistem mimarisi, kodlar ve proje belgelerinde arama yapmak için doğrudan kullanılır.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "Bilgi tabanında aranacak soru, kavram veya anahtar kelime."
+                },
+                "limit": {
+                    "type": "INTEGER",
+                    "description": "Döndürülecek maksimum sonuç parçası sayısı (varsayılan: 3)."
+                }
+            },
+            "required": [
+                "query"
+            ]
+        }
+    },
+    {
+        "name": "rag_index",
+        "description": "Yerel RAG bilgi tabanına yeni bir doküman, teknik not, makale veya kılavuz indeksler. Bilginin kalıcı ve hızlı semantik olarak aranabilmesini sağlar.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "title": {
+                    "type": "STRING",
+                    "description": "Dokümanın başlığı veya benzersiz tanımlayıcısı (örn: 'Event Bus Dokümanı', 'API Kılavuzu')."
+                },
+                "content": {
+                    "type": "STRING",
+                    "description": "İndekslenecek tam doküman veya not metni."
+                },
+                "category": {
+                    "type": "STRING",
+                    "description": "Opsiyonel kategori veya etiket (örn: 'teknik', 'proje', 'kisisel')."
+                }
+            },
+            "required": [
+                "title",
+                "content"
+            ]
+        }
+    },
+    {
+        "name": "get_presence_status",
+        "description": "Kullanıcının anlık varlık durumunu (UNKNOWN, PERSON_DETECTED, USER_PRESENT, USER_AWAY, USER_LEFT), son görülme zamanını ve sistem karşılama durumunu raporlar.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
+        }
+    },
+    {
+        "name": "manage_geofence",
+        "description": "Kullanıcının coğrafi sınırlarını (ev, ofis vb. geofence alanları) listeler, yeni bölge ekler veya mevcut bir bölgeyi siler.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "description": "list (bölgeleri listele) | add (yeni bölge ekle) | remove (bölgeyi sil)"
+                },
+                "name": {
+                    "type": "STRING",
+                    "description": "Bölge adı (örn: 'Ev', 'Ofis', 'Garaj')."
+                },
+                "latitude": {
+                    "type": "NUMBER",
+                    "description": "Bölgenin GPS enlem değeri (add için)."
+                },
+                "longitude": {
+                    "type": "NUMBER",
+                    "description": "Bölgenin GPS boylam değeri (add için)."
+                },
+                "radius_meters": {
+                    "type": "NUMBER",
+                    "description": "Bölge yarıçapı metre cinsinden (varsayılan: 150.0)."
+                }
+            },
+            "required": [
+                "action"
+            ]
+        }
+    },
+    {
+        "name": "send_system_notification",
+        "description": "ULTRON çok kanallı bildirim motoru (web_ui, gemini, tts, ha) üzerinden öncelikli sistem bildirimi gönderir.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "title": {
+                    "type": "STRING",
+                    "description": "Bildirim başlığı."
+                },
+                "message": {
+                    "type": "STRING",
+                    "description": "Bildirim mesaj içeriği."
+                },
+                "priority": {
+                    "type": "STRING",
+                    "description": "low | normal | high | critical (varsayılan: normal)"
+                }
+            },
+            "required": [
+                "title",
+                "message"
+            ]
+        }
+    },
+    {
+        "name": "run_system_diagnostics",
+        "description": "ULTRON System Doctor teşhis motorunu çalıştırır. Python sürümü, paket bağımlılıkları, portlar, API anahtarı ve 9 çekirdek modülün sağlık durumunu denetleyip tam teşhis raporu döner.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
+        }
+    },
+    {
+        "name": "deep_research",
+        "description": "Belirtilen konu hakkında internet üzerinde derin araştırma yürütür (DuckDuckGo, Wikipedia, web kaynakları taraması) ve sentezlenmiş kapsamlı Markdown raporu oluşturur.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {
+                    "type": "STRING",
+                    "description": "Araştırılacak konu veya soru."
+                },
+                "num_sources": {
+                    "type": "INTEGER",
+                    "description": "İncelenecek kaynak sayısı (varsayılan: 5)."
                 }
             },
             "required": [

@@ -19,7 +19,7 @@ export function createOrbScene(container) {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.85;
     container.appendChild(renderer.domElement);
@@ -27,7 +27,7 @@ export function createOrbScene(container) {
     // ── POST PROCESSING ──────────────────────────────────────────────────────
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(width, height), 1.8, 0.4, 0.2);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(Math.floor(width / 2), Math.floor(height / 2)), 1.8, 0.4, 0.2);
     composer.addPass(bloom);
 
     // ── ORBIT CONTROLS ───────────────────────────────────────────────────────
@@ -666,10 +666,24 @@ export function createOrbScene(container) {
     let strobeTimer        = 0;
     let debrisSpeedMult    = 1.0;
     let targetDebrisSpeedMult = 1.0;
+    let lastRenderTime     = 0;
 
-    function animate() {
+    function animate(currentTime = 0) {
         if (disposed) return;
         rafId = requestAnimationFrame(animate);
+
+        // Adaptive FPS Throttling for zero/low idle CPU:
+        // Background/hidden: 5 FPS, IDLE state: 30 FPS, Active: 60 FPS
+        const isHidden = typeof document !== "undefined" && document.hidden;
+        const targetFps = isHidden ? 5 : (aiState === "IDLE" ? 30 : 60);
+        const interval = 1000 / targetFps;
+        const elapsed = currentTime - lastRenderTime;
+
+        if (elapsed < interval - 2) {
+            return;
+        }
+        lastRenderTime = currentTime - (elapsed % interval);
+
         const delta = Math.min(clock.getDelta(), 0.1);
         const t     = clock.getElapsedTime();
 
@@ -1295,6 +1309,9 @@ export function createOrbScene(container) {
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
         composer.setSize(w, h);
+        if (bloom.resolution) {
+            bloom.resolution.set(Math.floor(w / 2), Math.floor(h / 2));
+        }
     }
     window.addEventListener("resize", onResize);
 

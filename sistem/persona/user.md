@@ -8,6 +8,11 @@
 - **Hitap:** YARATICI (değiştirilirse save_memory ile güncellenir)
 - **Dil tercihi:** Türkçe
 
+## Konum & Ev Bilgisi
+- **Ev Koordinatları:** 41°01'53.5"N 28°50'48.3"E (41.031528, 28.846750)
+- **Ev Adresi:** Kazım Karabekir Mahallesi, Bağcılar, İstanbul
+- **Geofence Bölgesi:** `home` (150m yarıçap)
+
 ## Çalışma Düzeni
 - Yazılım geliştirici / teknoloji meraklısı
 - Projeler: ULTRON (bu sistem), Twilio entegrasyonu, yapay zeka araştırması

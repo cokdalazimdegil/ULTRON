@@ -216,7 +216,7 @@ class StateManager {
       }
     }
 
-    statusEl.textContent = label;
+    statusEl.innerHTML = `<span class="status-dot"></span><span class="status-label">${escapeHtml(label)}</span>`;
     statusEl.className = `status-indicator state-${this.activeState.toLowerCase()} live`;
   }
 
@@ -533,6 +533,24 @@ function connect() {
         else stopCam();
         break;
 
+      case "report":
+        if (typeof window.showReportModal === "function") {
+          window.showReportModal(obj.title || "Araştırma Raporu", obj.content || "", obj.filename);
+        }
+        if (typeof _showReportNotification === "function") {
+          _showReportNotification("📋", `Rapor hazır: ${obj.title || 'Araştırma'}`, obj);
+        }
+        break;
+
+      case "system_log":
+        if (obj.log) {
+          if (!Array.isArray(_systemLogs)) _systemLogs = [];
+          _systemLogs.push(obj.log);
+          if (_systemLogs.length > 350) _systemLogs.shift();
+          if (typeof _renderSystemLogs === "function") _renderSystemLogs();
+        }
+        break;
+
       case "error":
         S.fatalMsg = obj.text;
         addLog("sys", "HATA: " + obj.text);
@@ -810,15 +828,28 @@ async function startMic() {
       S.analyserNode.getByteFrequencyData(dataArray);
 
       visCtx.clearRect(0, 0, visCanvas.width, visCanvas.height);
-      const barWidth = (visCanvas.width / bufferLength) * 1.5;
-      let x = 0;
+      const bars = Math.min(bufferLength, 16);
+      const gap = 2.5;
+      const barWidth = Math.max(2.5, (visCanvas.width - (bars - 1) * gap) / bars);
 
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * visCanvas.height;
-        // Ultron color
-        visCtx.fillStyle = `rgb(255, ${68 + (dataArray[i] / 2)}, 34)`;
-        visCtx.fillRect(x, visCanvas.height - barHeight, barWidth, barHeight);
-        x += barWidth + 2;
+      for (let i = 0; i < bars; i++) {
+        const val = dataArray[i * 2] || 0;
+        const barHeight = Math.max(3, (val / 255) * visCanvas.height);
+        const x = i * (barWidth + gap);
+        const y = (visCanvas.height - barHeight) / 2;
+
+        const grad = visCtx.createLinearGradient(0, y, 0, y + barHeight);
+        grad.addColorStop(0, "#ffaa30");
+        grad.addColorStop(1, "#ff3311");
+        visCtx.fillStyle = grad;
+
+        visCtx.beginPath();
+        if (visCtx.roundRect) {
+          visCtx.roundRect(x, y, barWidth, barHeight, 2);
+        } else {
+          visCtx.rect(x, y, barWidth, barHeight);
+        }
+        visCtx.fill();
       }
     }
     drawVisualizer();
@@ -1185,43 +1216,70 @@ window.addEventListener("keydown", (e) => {
 });
 
 // ── Tam Ekran Yönetimi (Fullscreen Management) ─────────────────────────────
-function toggleFullscreen() {
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.warn("Fullscreen request error:", err);
-      });
-    } else if (document.documentElement.webkitRequestFullscreen) {
-      document.documentElement.webkitRequestFullscreen();
-    }
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(err => {
-        console.warn("Exit fullscreen error:", err);
-      });
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
+function _updateFullscreenUI(isFull) {
+  const btn = $("btn-fullscreen");
+  if (!btn) return;
+  btn.classList.toggle("active", Boolean(isFull));
+  btn.innerHTML = isFull ? "🗗" : "⛶";
+  btn.title = isFull ? "Pencere Moduna Geç (F11)" : "Tam Ekran Modunu Aç (F11)";
+}
+
+window.toggleFullscreen = async function() {
+  // 1. Pywebview native API kontrolü (Desktop App)
+  if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.toggle_fullscreen === "function") {
+    try {
+      const isFull = await window.pywebview.api.toggle_fullscreen();
+      _updateFullscreenUI(isFull);
+      return;
+    } catch (err) {
+      console.warn("[Fullscreen] pywebview API hatası:", err);
     }
   }
-}
+
+  // 2. Standart HTML5 Fullscreen API
+  try {
+    const isDocFull = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+    if (!isDocFull) {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
+      _updateFullscreenUI(true);
+    } else {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+      _updateFullscreenUI(false);
+    }
+  } catch (err) {
+    console.warn("[Fullscreen] HTML5 Fullscreen hatası:", err);
+  }
+};
 
 const btnFullscreen = $("btn-fullscreen");
 if (btnFullscreen) {
-  btnFullscreen.addEventListener("click", () => toggleFullscreen());
+  btnFullscreen.addEventListener("click", () => window.toggleFullscreen());
 }
 
 document.addEventListener("fullscreenchange", () => {
-  const btn = $("btn-fullscreen");
-  if (btn) {
-    if (document.fullscreenElement) {
-      btn.classList.add("active");
-      btn.textContent = "⛶ PENCERE";
-      btn.title = "Pencere Moduna Geç (F11)";
-    } else {
-      btn.classList.remove("active");
-      btn.textContent = "⛶ TAM EKRAN";
-      btn.title = "Tam Ekran Modunu Aç (F11)";
-    }
+  _updateFullscreenUI(Boolean(document.fullscreenElement));
+});
+document.addEventListener("webkitfullscreenchange", () => {
+  _updateFullscreenUI(Boolean(document.webkitFullscreenElement));
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "F11") {
+    e.preventDefault();
+    window.toggleFullscreen();
   }
 });
 
@@ -1858,11 +1916,26 @@ window.toggleSwarmConsole = function() {
   const panel = document.getElementById('swarm-console');
   if (!panel) return;
   const isHidden = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !isHidden);
   if (isHidden) {
+    panel.classList.remove('hidden');
     _connectSwarmWs();
+    _fetchSwarmTasksHttp();
+  } else {
+    panel.classList.add('hidden');
   }
 };
+
+async function _fetchSwarmTasksHttp() {
+  try {
+    const res = await fetch('/api/swarm/tasks');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.all_tasks)) {
+      _swarmTasks = {};
+      data.all_tasks.forEach(t => { _swarmTasks[t.task_id] = t; });
+      _renderSwarmTasks();
+    }
+  } catch (_) {}
+}
 
 function _connectSwarmWs() {
   if (_swarmWs && _swarmWs.readyState === WebSocket.OPEN) return;
@@ -1933,7 +2006,123 @@ function _renderSwarmTasks() {
   }).join('');
 }
 
-// Sayfa yüklenince swarm ws bağlantısını arkaplanda aç (panel kapalı olsa bile badge güncel olsun)
+// ── COMPANION MODE (ARKADAŞ MODU) ──────────────────────────────────────────
+window.toggleCompanionMode = async function() {
+  const btn = document.getElementById('btn-companion-toggle');
+  const dot = document.getElementById('companion-dot');
+  try {
+    const res = await fetch('/api/companion/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const isRunning = Boolean(data.running);
+      if (btn) btn.classList.toggle('active', isRunning);
+      if (dot) dot.classList.toggle('hidden', !isRunning);
+      if (typeof addLog === 'function') {
+        addLog(data.message || (isRunning ? '🎮 Companion modu devrede!' : '🎮 Companion modu kapatıldı.'), 'system');
+      }
+    }
+  } catch (err) {
+    console.error('[Companion] Toggle hatası:', err);
+  }
+};
+
+async function _checkCompanionStatus() {
+  try {
+    const res = await fetch('/api/companion/status');
+    const data = await res.json();
+    if (data.ok && data.data) {
+      const isRunning = Boolean(data.data.running);
+      const btn = document.getElementById('btn-companion-toggle');
+      const dot = document.getElementById('companion-dot');
+      if (btn) btn.classList.toggle('active', isRunning);
+      if (dot) dot.classList.toggle('hidden', !isRunning);
+    }
+  } catch (_) {}
+}
+
+// ── SYSTEM & NEURAL LOGS CONTROLLER ─────────────────────────────────────────
+let _systemLogs = [];
+let _activeLogFilter = 'ALL';
+
+window.toggleSystemLogs = function() {
+  const modal = document.getElementById('system-logs-modal');
+  if (!modal) return;
+  const isHidden = modal.classList.contains('hidden');
+  if (isHidden) {
+    modal.classList.remove('hidden');
+    window.refreshSystemLogs();
+  } else {
+    modal.classList.add('hidden');
+  }
+};
+
+window.refreshSystemLogs = async function() {
+  try {
+    const res = await fetch('/api/system/logs?limit=150');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.logs)) {
+      _systemLogs = data.logs;
+      _renderSystemLogs();
+    }
+  } catch (err) {
+    console.warn('[SystemLogs] Log çekme hatası:', err);
+  }
+};
+
+window.clearSystemLogs = async function() {
+  try {
+    await fetch('/api/system/logs/clear', { method: 'POST' });
+    _systemLogs = [];
+    _renderSystemLogs();
+  } catch (err) {
+    console.warn('[SystemLogs] Temizleme hatası:', err);
+  }
+};
+
+window.filterSystemLogs = function(filter) {
+  _activeLogFilter = filter || 'ALL';
+  document.querySelectorAll('.log-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-filter') === _activeLogFilter);
+  });
+  _renderSystemLogs();
+};
+
+function _renderSystemLogs() {
+  const term = document.getElementById('system-logs-terminal');
+  if (!term) return;
+
+  const filtered = _systemLogs.filter(item => {
+    if (_activeLogFilter === 'ALL') return true;
+    if (_activeLogFilter === 'EVENT') return item.level === 'EVENT' || item.logger === 'event_bus';
+    return String(item.level).toUpperCase() === _activeLogFilter;
+  });
+
+  if (filtered.length === 0) {
+    term.innerHTML = '<div class="system-log-line info"><span class="log-t">[--:--:--]</span> Filtreye uygun sistem kaydı bulunmuyor.</div>';
+    return;
+  }
+
+  term.innerHTML = filtered.map(log => {
+    const lvl = (log.level || 'INFO').toLowerCase();
+    const loggerTag = log.logger ? `[${escapeHtml(log.logger)}]` : '';
+    return `
+      <div class="system-log-line ${lvl}">
+        <span class="log-t">[${escapeHtml(log.time || '')}]</span>
+        <span class="log-l">[${escapeHtml(log.level || 'INFO')}]</span>
+        <span class="log-msg">${loggerTag} ${escapeHtml(log.message || '')}</span>
+      </div>`;
+  }).join('');
+
+  term.scrollTop = term.scrollHeight;
+}
+
+// Sayfa yüklenince swarm ws, companion ve log durumunu arkaplanda kontrol et
 window.addEventListener('load', () => {
   setTimeout(_connectSwarmWs, 2000);
+  setTimeout(_checkCompanionStatus, 1500);
+  setTimeout(window.refreshSystemLogs, 1000);
 });

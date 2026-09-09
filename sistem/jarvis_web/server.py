@@ -24,13 +24,15 @@ import asyncio
 import argparse
 import datetime
 import json
+import logging
+from collections import deque
 import secrets
 import subprocess
 import traceback
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -152,14 +154,17 @@ def get_api_key() -> str:
 
 def load_system_prompt() -> str:
     try:
-        from prompt_loader import adapt_prompt
-
-        base = adapt_prompt(PROMPT_PATH.read_text(encoding="utf-8"))
+        from prompt_loader import load_system_prompt as get_dynamic_prompt
+        base = get_dynamic_prompt()
     except Exception:
-        base = (
-            "Sen ULTRON'sin — kişisel AI asistanı. Türkçe konuş. "
-            "Kısa ve net yanıtlar ver. Araçları kullanarak görevleri tamamla."
-        )
+        try:
+            from prompt_loader import adapt_prompt
+            base = adapt_prompt(PROMPT_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            base = (
+                "Sen U.L.T.R.O.N'sun — Üstün Otonom Bilgisayar Zekası. Türkçe konuş. "
+                "Kısa ve net yanıtlar ver. Araçları kullanarak görevleri tamamla."
+            )
     if PUBLIC_MODE:
         web_ctx = (
             "\n\n[WEB — HERKESE AÇIK MOD]\n"
@@ -645,7 +650,7 @@ class LiveBridge:
                 active_agent = "research_agent"
             else:
                 active_agent = "supervisor"
-        elif name in ("orchestrate_task", "ask_openclaw_brain", "openclaw_brain_query"):
+        elif name in ("orchestrate_task", "ask_openclaw_brain", "openclaw_brain_query", "send_system_notification", "run_system_diagnostics"):
             active_agent = "supervisor"
         elif name == "code_action":
             active_agent = "coding_agent"
@@ -653,9 +658,9 @@ class LiveBridge:
             active_agent = "testing_agent"
         elif name == "code_review":
             active_agent = "reviewer_agent"
-        elif name in ("screen_awareness", "computer_control", "open_app", "browser_action", "browser_control", "shopping_action"):
+        elif name in ("screen_awareness", "computer_control", "open_app", "browser_action", "browser_control", "shopping_action", "manage_geofence", "get_presence_status", "start_companion_mode", "stop_companion_mode"):
             active_agent = "computer_agent"
-        elif name in ("fetch_webpage_content", "search_emails", "web_search", "deep_research"):
+        elif name in ("fetch_webpage_content", "search_emails", "web_search", "deep_research", "rag_search", "rag_index"):
             active_agent = "research_agent"
 
         if active_agent:
@@ -885,6 +890,222 @@ async def set_location_api(payload: dict):
     return {"status": "error", "message": "Eksik koordinat bilgisi"}
 
 
+# ── WEBHOOK GATEWAY ──────────────────────────────────────────────────────────
+# Dış dünyadan (Home Assistant, iOS Shortcuts, GPS tracker, IFTTT) gelen
+# event'leri alan standart HTTP webhook endpoint'leri.
+
+_webhook_rate_limiter: dict = {}  # source_ip → (count, window_start)
+WEBHOOK_RATE_LIMIT = 60          # requests per minute
+WEBHOOK_RATE_WINDOW = 60         # seconds
+
+def _check_webhook_rate(client_ip: str) -> bool:
+    """Basit rate limiter. True = izin ver."""
+    import time as _time
+    now = _time.time()
+    entry = _webhook_rate_limiter.get(client_ip)
+    if entry is None or now - entry[1] > WEBHOOK_RATE_WINDOW:
+        _webhook_rate_limiter[client_ip] = (1, now)
+        return True
+    count, window_start = entry
+    if count >= WEBHOOK_RATE_LIMIT:
+        return False
+    _webhook_rate_limiter[client_ip] = (count + 1, window_start)
+    return True
+
+
+@app.post("/api/webhook/v1/event")
+async def webhook_generic_event(payload: dict, request: Request):
+    """
+    Genel amaçlı webhook endpoint'i.
+    Dış sistemlerden (iOS Shortcuts, IFTTT, custom scripts) gelen event'leri alır.
+
+    Body:
+        {
+            "event_type": "user.arrived_home",   # Zorunlu
+            "source": "ios_shortcuts",            # Opsiyonel
+            "payload": {...},                     # Opsiyonel
+            "priority": 50,                       # Opsiyonel (10-100)
+            "token": "<access_token>"             # Zorunlu (PUBLIC_MODE hariç)
+        }
+    """
+    # Auth kontrolü
+    if not PUBLIC_MODE:
+        req_token = payload.get("token", "") or request.query_params.get("token", "")
+        if req_token != TOKEN:
+            return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
+
+    # Rate limit
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_webhook_rate(client_ip):
+        return {"status": "error", "message": "Rate limit aşıldı", "code": 429}
+
+    event_type = payload.get("event_type")
+    if not event_type:
+        return {"status": "error", "message": "event_type gerekli"}
+
+    try:
+        from core.event_bus import bus
+        from core.events import UltronEvent, EventPriority, EventSource
+
+        priority_val = int(payload.get("priority", EventPriority.NORMAL))
+        try:
+            priority = EventPriority(priority_val)
+        except ValueError:
+            priority = EventPriority.NORMAL
+
+        event = UltronEvent(
+            event_type=event_type,
+            source=str(payload.get("source", EventSource.WEBHOOK)),
+            payload=payload.get("payload", {}),
+            priority=priority,
+            metadata={"webhook": True, "client_ip": client_ip},
+        )
+        bus.publish_event(event)
+
+        return {
+            "status": "ok",
+            "event_id": event.event_id,
+            "event_type": event_type,
+            "message": f"Event '{event_type}' alındı ve Event Bus'a yayınlandı.",
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/webhook/homeassistant")
+async def webhook_homeassistant(payload: dict, request: Request):
+    """
+    Home Assistant webhook alıcısı.
+    HA Automation → Webhook Action ile gelen event'leri alır.
+
+    Body:
+        {
+            "event_type": "person.nuri.home",     # HA event türü
+            "entity_id": "person.nuri",            # HA entity
+            "state": "home",                       # Yeni durum
+            "old_state": "not_home",               # Eski durum
+            "attributes": {...},                    # Ek nitelikler
+            "token": "<access_token>"              # Zorunlu
+        }
+    """
+    # Auth
+    if not PUBLIC_MODE:
+        req_token = payload.get("token", "") or request.query_params.get("token", "")
+        if req_token != TOKEN:
+            return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
+
+    # Rate limit
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_webhook_rate(client_ip):
+        return {"status": "error", "message": "Rate limit aşıldı", "code": 429}
+
+    try:
+        from core.event_bus import bus
+        from core.events import UltronEvent, EventPriority, EventSource
+
+        ha_event_type = payload.get("event_type", "ha.unknown")
+        entity_id = payload.get("entity_id", "")
+        new_state = payload.get("state", "")
+        old_state = payload.get("old_state", "")
+
+        # HA event'lerini ULTRON event namespace'ine çevir
+        ultron_event_type = f"ha.{ha_event_type}" if not ha_event_type.startswith("ha.") else ha_event_type
+
+        event = UltronEvent(
+            event_type=ultron_event_type,
+            source=EventSource.HOME_ASSIST,
+            payload={
+                "entity_id": entity_id,
+                "state": new_state,
+                "old_state": old_state,
+                "attributes": payload.get("attributes", {}),
+                "raw": {k: v for k, v in payload.items() if k not in ("token",)},
+            },
+            priority=EventPriority.NORMAL,
+            metadata={"webhook": True, "ha": True},
+        )
+        bus.publish_event(event)
+
+        return {
+            "status": "ok",
+            "event_id": event.event_id,
+            "ultron_event_type": ultron_event_type,
+            "message": f"HA event '{ha_event_type}' alındı.",
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/webhook/location")
+async def webhook_location_update(payload: dict, request: Request):
+    """
+    Konum güncellemesi webhook'u.
+    GPS Tracker app (OwnTracks, GPS Logger, iOS Shortcuts) → ULTRON.
+
+    Body:
+        {
+            "user": "YARATICI",
+            "lat": 41.0082,
+            "lng": 28.9784,
+            "accuracy": 15.0,
+            "speed": 0.5,
+            "battery": 85,
+            "token": "<access_token>"
+        }
+    """
+    # Auth
+    if not PUBLIC_MODE:
+        req_token = payload.get("token", "") or request.query_params.get("token", "")
+        if req_token != TOKEN:
+            return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
+
+    # Rate limit
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_webhook_rate(client_ip):
+        return {"status": "error", "message": "Rate limit aşıldı", "code": 429}
+
+    user = payload.get("user", "YARATICI")
+    lat = payload.get("lat")
+    lng = payload.get("lng")
+
+    if lat is None or lng is None:
+        return {"status": "error", "message": "lat ve lng gerekli"}
+
+    try:
+        # Mevcut location_tracker'a kaydet
+        from actions.location_tracker import update_user_location
+        rec = update_user_location(user, float(lat), float(lng), float(payload.get("accuracy", 0)) or None)
+
+        # Event Bus'a konum güncellemesi yayınla
+        from core.event_bus import bus
+        from core.events import UltronEvent, EventPriority, EventSource
+
+        event = UltronEvent(
+            event_type="user.location.changed",
+            source=EventSource.LOCATION,
+            payload={
+                "user": user,
+                "lat": float(lat),
+                "lng": float(lng),
+                "accuracy": payload.get("accuracy"),
+                "speed": payload.get("speed"),
+                "battery": payload.get("battery"),
+            },
+            priority=EventPriority.NORMAL,
+        )
+        bus.publish_event(event)
+
+        return {
+            "status": "ok",
+            "event_id": event.event_id,
+            "record": rec,
+            "message": f"Konum güncellendi ve 'user.location.changed' event'i fırlatıldı.",
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+
 async def _proactive_cron_worker():
     """Arka planda zamanı dolan hatırlatıcıları ve yeni gelen önemli e-postaları izler, proaktif anons yapar."""
     await asyncio.sleep(3)
@@ -1036,6 +1257,41 @@ async def lifespan(app: FastAPI):
         
     bus.subscribe("ui_alert", _ui_alert_callback)
 
+    # Notification Engine kanallarını Web UI ve TTS ile bağla
+    try:
+        from core.notification_engine import notification_engine
+        def _notify_web_ui(title, message, priority, metadata):
+            alert_text = f"[{title}] {message}" if title else message
+            bus.publish("ui_alert", alert_text)
+            return True
+        def _notify_tts(title, message, priority, metadata):
+            from actions.tts import speak_text
+            speak_text(message)
+            return True
+        notification_engine.register_channel("web_ui", _notify_web_ui)
+        notification_engine.register_channel("tts", _notify_tts)
+    except Exception:
+        pass
+
+    # Sistem Log kuyruğuna Event Bus olaylarını bağla
+    def _bus_event_to_log(data):
+        try:
+            time_str = time.strftime("%H:%M:%S")
+            desc = str(data)
+            if hasattr(data, "event_type"):
+                desc = f"{data.event_type} | {data.payload}"
+            elif isinstance(data, dict):
+                desc = f"{data.get('event_type', '')} | {data.get('payload', data)}"
+            system_log_handler.buffer.append({
+                "time": time_str,
+                "level": "EVENT",
+                "logger": "event_bus",
+                "message": desc[:150]
+            })
+        except Exception:
+            pass
+    bus.subscribe("*", _bus_event_to_log)
+
     # Dream Engine etkinlik ping'i — Gemini Live'dan gelen mesajlarda çağrılır
     def _dream_ping_on_activity(data):
         try:
@@ -1045,21 +1301,19 @@ async def lifespan(app: FastAPI):
             pass
     bus.subscribe("user_activity", _dream_ping_on_activity)
 
-    # Observer: kullanıcı geldiğinde proaktif karşılama
-    def _observer_presence_callback(data: dict):
-        is_present = data.get("present", False)
-        if is_present:
-            async def _greet():
-                for bridge in list(web_clients):
-                    try:
-                        await bridge.session.send_client_content(
-                            turns={"parts": [{"text": "Hoş geldiniz YARATICI. Yokken gelen önemli bir şey var mı diye bakıyorum."}]},
-                            turn_complete=True
-                        )
-                    except Exception:
-                        pass
-            asyncio.run_coroutine_threadsafe(_greet(), loop)
-    bus.subscribe("observer_presence", _observer_presence_callback)
+    # Presence Engine: kullanıcı geldiğinde proaktif, kontrollü karşılama (debounced & cooldown)
+    def _presence_greeting_callback(data: dict):
+        async def _greet():
+            for bridge in list(web_clients):
+                try:
+                    await bridge.session.send_client_content(
+                        turns={"parts": [{"text": "Hoş geldiniz YARATICI. Yokken gelen önemli bir şey var mı diye bakıyorum."}]},
+                        turn_complete=True
+                    )
+                except Exception:
+                    pass
+        asyncio.run_coroutine_threadsafe(_greet(), loop)
+    bus.subscribe("presence.greeting_due", _presence_greeting_callback)
 
     # Observer: ruh hali değiştiğinde sistem prompt'una ekle
     def _observer_mood_callback(data: dict):
@@ -1535,6 +1789,116 @@ def detect_lan_ip() -> str:
         return ip
     except Exception:
         return "<mac-ip>"
+
+
+# ── Companion Mode Endpoints ────────────────────────────────────────────────
+@app.get("/api/companion/status")
+async def get_companion_status():
+    """Companion modu durumunu döner."""
+    try:
+        from actions.companion_mode import companion_engine
+        return {"ok": True, "data": companion_engine.get_status()}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/api/companion/toggle")
+async def toggle_companion_mode(payload: dict = None):
+    """Companion modunu açıp kapatır."""
+    try:
+        from actions.companion_mode import companion_engine
+        payload = payload or {}
+        action = str(payload.get("action", "")).strip().lower()
+        interval = payload.get("interval_sec")
+
+        if action == "start":
+            msg = companion_engine.start(interval_sec=interval)
+        elif action == "stop":
+            msg = companion_engine.stop()
+        else:
+            # Toggle
+            if companion_engine.is_running():
+                msg = companion_engine.stop()
+            else:
+                msg = companion_engine.start(interval_sec=interval)
+
+        return {
+            "ok": True,
+            "running": companion_engine.is_running(),
+            "message": msg,
+            "status": companion_engine.get_status(),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ── Swarm Tasks Endpoint ───────────────────────────────────────────────────
+@app.get("/api/swarm/tasks")
+async def get_swarm_tasks_api():
+    """Ajan ağı görevlerinin anlık listesini döner."""
+    try:
+        from core.swarm_reporter import swarm_reporter
+        return {
+            "ok": True,
+            "all_tasks": swarm_reporter.get_all_tasks(),
+            "active_count": swarm_reporter.get_active_count(),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "all_tasks": []}
+
+
+# ── System Logs Ring Buffer & Endpoints ─────────────────────────────────────
+class SystemLogHandler(logging.Handler):
+    """ULTRON log mesajlarını bellekteki dairesel kuyrukta tutar."""
+    def __init__(self, maxlen=350):
+        super().__init__()
+        self.buffer = deque(maxlen=maxlen)
+
+    def emit(self, record):
+        try:
+            entry = {
+                "time": time.strftime("%H:%M:%S", time.localtime(record.created)),
+                "level": record.levelname,
+                "logger": record.name.replace("ultron.", ""),
+                "message": record.getMessage(),
+            }
+            self.buffer.append(entry)
+        except Exception:
+            pass
+
+system_log_handler = SystemLogHandler()
+system_log_handler.setLevel(logging.INFO)
+logging.getLogger("ultron").setLevel(logging.INFO)
+logging.getLogger("ultron").addHandler(system_log_handler)
+logging.getLogger().addHandler(system_log_handler)
+
+system_log_handler.buffer.append({
+    "time": time.strftime("%H:%M:%S"),
+    "level": "INFO",
+    "logger": "system",
+    "message": "ULTRON çekirdek motoru ve log izleyicisi aktif."
+})
+
+
+@app.get("/api/system/logs")
+async def get_system_logs_api(limit: int = 150):
+    """Sistem ve olay loglarını döner."""
+    try:
+        logs = list(system_log_handler.buffer)[-limit:]
+        return {
+            "ok": True,
+            "logs": logs,
+            "total": len(system_log_handler.buffer),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "logs": []}
+
+
+@app.post("/api/system/logs/clear")
+async def clear_system_logs_api():
+    """Sistem log kuyruğunu temizler."""
+    system_log_handler.buffer.clear()
+    return {"ok": True, "message": "Loglar temizlendi."}
 
 
 def main():

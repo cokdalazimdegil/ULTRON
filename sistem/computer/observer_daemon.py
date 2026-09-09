@@ -75,6 +75,7 @@ class ObserverDaemon:
         self._consecutive_empty: int = 0     # ardışık boş kare sayacı
         self._last_mood_time: float = 0.0    # son Gemini çağrısının zamanı
         self._last_mood: str = "bilinmiyor"  # son ruh hali
+        self._cam_fail_count: int = 0
 
     # ── Başlat / Durdur ───────────────────────────────────────────────────────
 
@@ -100,7 +101,8 @@ class ObserverDaemon:
                 self._tick()
             except Exception as exc:
                 logger.debug(f"[Observer] Döngü hatası: {exc}")
-            time.sleep(self.patrol_interval)
+            sleep_time = self.patrol_interval if self._cam_fail_count < 3 else min(180.0, self.patrol_interval * 3)
+            time.sleep(sleep_time)
 
     def _tick(self):
         frame_b64 = self._capture_frame()
@@ -140,14 +142,18 @@ class ObserverDaemon:
         try:
             cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
             if not cap.isOpened():
+                self._cam_fail_count += 1
                 return None
             ret, frame = cap.read()
             cap.release()
             if not ret or frame is None:
+                self._cam_fail_count += 1
                 return None
+            self._cam_fail_count = 0
             _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
             return base64.b64encode(buf.tobytes()).decode("utf-8")
         except Exception as exc:
+            self._cam_fail_count += 1
             logger.debug(f"[Observer] Kare yakalama hatası: {exc}")
             return None
 

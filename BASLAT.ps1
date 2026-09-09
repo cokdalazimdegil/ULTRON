@@ -23,14 +23,14 @@ $LOG      = Join-Path $env:TEMP "jarvis_kurulum.log"
 function Test-PyVersion([string]$exe) {
     if (-not $exe) { return $false }
     try {
-        & $exe -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>$null
+        & $exe -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, 10) else 1)" 2>$null
         return ($LASTEXITCODE -eq 0)
     } catch { return $false }
 }
 
 function Find-Python {
     # 1) py launcher - en guvenilir yol
-    foreach ($v in @("-3.13", "-3.12", "-3.11", "-3")) {
+    foreach ($v in @("-3.13", "-3.12", "-3.11", "-3.10", "-3")) {
         try {
             $out = & py $v -c "import sys; print(sys.executable)" 2>$null
             if ($LASTEXITCODE -eq 0 -and $out -and (Test-PyVersion $out)) { return $out.Trim() }

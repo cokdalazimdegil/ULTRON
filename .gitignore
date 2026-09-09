@@ -98,3 +98,9 @@ transcripts/
 sistem/transcripts/
 *.png
 !sistem/jarvis_web/**/*.png
+
+# Runtime databases & generated reports
+sistem/memory/unified_memory.json
+sistem/memory/rag_chroma/
+sistem/memory/research_reports/
+sistem/config/geofence_zones.json

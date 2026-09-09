@@ -60,13 +60,18 @@ class SwarmReporter:
 
     def register_task(
         self,
-        agent_name: str,
-        description: str,
+        agent_name: str = "agent",
+        description: str = "",
         parent_task_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        **kwargs
     ) -> str:
+        tid = task_id or uuid.uuid4().hex[:8]
+        desc = description or kwargs.get("goal", "") or agent_name
         task = AgentTask(
-            agent_name=agent_name,
-            description=description[:120],
+            task_id=tid,
+            agent_name=agent_name or kwargs.get("agent_role", "agent"),
+            description=desc[:120],
             status=TASK_RUNNING,
             started_at=time.time(),
             parent_task_id=parent_task_id,
@@ -87,7 +92,7 @@ class SwarmReporter:
             task.status = status
         self._push_update(task)
 
-    def complete_task(self, task_id: str, success: bool = True, summary: str = ""):
+    def complete_task(self, task_id: str, success: bool = True, summary: str = "", **kwargs):
         with self._task_lock:
             task = self._tasks.get(task_id)
         if not task:
@@ -95,7 +100,7 @@ class SwarmReporter:
         task.status = TASK_SUCCESS if success else TASK_FAILED
         task.progress = 100 if success else task.progress
         task.finished_at = time.time()
-        task.result_summary = summary[:200]
+        task.result_summary = (summary or kwargs.get("result_summary", ""))[:200]
         self._push_update(task)
 
         # Tamamlanan görevleri 60 saniye sonra temizle
@@ -106,9 +111,18 @@ class SwarmReporter:
                 self._tasks.pop(t_id, None)
         threading.Thread(target=_cleanup, daemon=True).start()
 
+    def get_task(self, task_id: str) -> Optional[dict]:
+        with self._task_lock:
+            t = self._tasks.get(task_id)
+            return t.to_dict() if t else None
+
     def get_all_tasks(self) -> List[dict]:
         with self._task_lock:
             return [t.to_dict() for t in self._tasks.values()]
+
+    def get_active_tasks(self) -> List[str]:
+        with self._task_lock:
+            return [t.task_id for t in self._tasks.values() if t.status == TASK_RUNNING]
 
     def get_active_count(self) -> int:
         with self._task_lock:
@@ -134,7 +148,11 @@ class SwarmReporter:
         with self._lock:
             for q in list(self._listeners):
                 try:
-                    q.put_nowait(payload)
+                    loop = getattr(q, "_loop", None)
+                    if loop and loop.is_running():
+                        loop.call_soon_threadsafe(q.put_nowait, payload)
+                    else:
+                        q.put_nowait(payload)
                 except Exception:
                     pass
 

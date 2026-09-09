@@ -20,12 +20,16 @@ from orchestrator.gemini_reasoning import query_gemini_reasoning
 logger = logging.getLogger("ultron.computer.cyberdog")
 
 SUSPICIOUS_KEYWORDS = ["miner", "xmrig", "trojan", "keylogger", "ransomware", "crypt", "hack", "stealer"]
-SAFE_PROCESSES = ["chrome.exe", "code.exe", "python.exe", "explorer.exe", "system", "svchost.exe", "taskmgr.exe"]
+SAFE_PROCESSES = {
+    "chrome.exe", "code.exe", "python.exe", "explorer.exe", "system",
+    "svchost.exe", "taskmgr.exe", "msedge.exe", "powershell.exe", "cmd.exe",
+    "runtimebroker.exe", "searchhost.exe", "shellexperiencehost.exe"
+}
 
 class CyberDogEngine:
     """Otonom Siber Güvenlik Bekçi Köpeği."""
     
-    def __init__(self, patrol_interval_sec: float = 45.0):
+    def __init__(self, patrol_interval_sec: float = 90.0):
         self.patrol_interval_sec = patrol_interval_sec
         self._running = False
         self._thread: Optional[threading.Thread] = None

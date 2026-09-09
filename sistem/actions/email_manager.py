@@ -389,8 +389,27 @@ def check_new_important_emails() -> list[dict]:
         eid = e.get("id") or f"{e['sender']}_{e['subject']}"
         if eid not in seen:
             seen.add(eid)
-            if e["important"]:
-                new_important.append(e)
+
+            # Akıllı skorlama yap
+            try:
+                from core.email_scorer import score_email, create_email_event
+                scoring = score_email(e.get("subject", ""), e.get("sender", ""), e.get("body_preview", ""))
+                e["score"] = scoring["score"]
+                e["category"] = scoring["category"]
+                e["reason"] = scoring["reason"]
+                if scoring["is_important"]:
+                    e["important"] = True
+                    new_important.append(e)
+
+                    # Event Bus'a yayınla
+                    try:
+                        from core.event_bus import bus
+                        bus.publish_event(create_email_event(e))
+                    except Exception:
+                        pass
+            except Exception:
+                if e.get("important"):
+                    new_important.append(e)
 
     _save_seen_emails(seen)
     return new_important
