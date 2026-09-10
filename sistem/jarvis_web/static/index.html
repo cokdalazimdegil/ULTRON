@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="/static/style.css">
   
   <script src="/static/lib/qrcode.min.js"></script>
+  <script src="/static/lib/gsap.min.js"></script>
   <script type="importmap">
     {
       "imports": {
@@ -69,13 +70,14 @@
 
   <!-- Arka Plan Atmosferi (Sade, Derin ve Zarif) -->
   <div class="hud-ambient-glow"></div>
+  <div class="hud-spatial-grid"></div>
   <div class="hud-vignette"></div>
 
   <!-- 3D Orb Sahnesi -->
   <div id="orb-container"></div>
 
   <!-- HUD Üst Sol: Marka ve Durum -->
-  <div id="hud-top-left">
+  <div id="hud-top-left" class="hud-pod antigravity-pod">
     <div class="brand">
       <span class="brand-text">U.L.T.R.O.N</span>
       <span class="sub">NEURAL CORE</span>
@@ -91,7 +93,7 @@
   </div>
 
   <!-- HUD Üst Sağ: Kontrol Barı ve Görselleştirici -->
-  <div id="hud-top-right">
+  <div id="hud-top-right" class="hud-pod antigravity-pod">
     <div class="top-actions">
       <!-- Ses Spektrum Kapsülü -->
       <div class="visualizer-capsule" title="Canlı Ses Seviyesi">
@@ -132,7 +134,7 @@
   </div>
 
   <!-- Canlı Kamera (Picture-in-Picture) -->
-  <div id="cam-wrap" class="hidden">
+  <div id="cam-wrap" class="spatial-card hidden">
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="hand-canvas" width="640" height="480"></canvas>
     <span class="cam-live">● CANLI</span>
@@ -140,7 +142,7 @@
 
   <!-- Katlanabilir Sohbet Konsolu -->
   <div id="hud-center">
-    <div id="log-container" class="collapsed">
+    <div id="log-container" class="collapsed spatial-card">
       <div class="log-header">
         <div class="log-title">
           <span class="log-title-icon">⚡</span>
@@ -159,7 +161,7 @@
   <div id="hud-toast" class="hud-toast hidden"></div>
 
   <!-- Alt Komut Adası (Floating Command Island) -->
-  <div id="hud-bottom">
+  <div id="hud-bottom" class="hud-pod antigravity-pod">
     <div class="main-controls">
       <!-- Mikrofon Ana Butonu -->
       <button id="btn-mic" class="ctl ctl-mic" title="Mikrofon Dinlemeyi Başlat / Durdur">
@@ -196,7 +198,7 @@
 
   <!-- QR Bağlantı Modalı -->
   <div id="qr-modal" class="modal-overlay hidden">
-    <div class="modal-card">
+    <div class="modal-card spatial-card">
       <div class="modal-header">
         <div class="modal-title">📱 TELEFONDAN BAĞLAN // UPLINK</div>
         <button id="btn-close-qr" class="modal-close-btn" title="Kapat">✕</button>
@@ -230,7 +232,7 @@
 
   <!-- API Anahtar Giriş Ekranı (Public Mod) -->
   <div id="key-screen" class="hidden">
-    <div class="key-box">
+    <div class="key-box spatial-card">
       <div class="key-title">⚡ U.L.T.R.O.N CORE</div>
       <div class="key-sub">INITIALIZATION REQUIRED: ENTER GEMINI API KEY</div>
       <input id="key-input" type="password" placeholder="API Key" autocomplete="off" spellcheck="false">
@@ -242,7 +244,7 @@
 
   <!-- Rapor Görüntüleyici Modalı -->
   <div id="report-modal" class="modal-overlay hidden">
-    <div class="modal-card report-card-wide">
+    <div class="modal-card spatial-card report-card-wide">
       <div class="modal-header">
         <div class="modal-title" id="report-modal-title">📋 ARAŞTIRMA VE GÖREV RAPORU</div>
         <div style="display:flex;gap:10px;align-items:center;">
@@ -267,7 +269,7 @@
   </div>
 
   <!-- Agent Swarm Konsolu -->
-  <div id="swarm-console" class="swarm-console hidden">
+  <div id="swarm-console" class="swarm-console spatial-card hidden">
     <div class="swarm-console-header">
       <div class="swarm-title">
         <span class="swarm-title-icon">⚡</span>
@@ -285,7 +287,7 @@
 
   <!-- ULTRON Sistem Logları Modalı -->
   <div id="system-logs-modal" class="modal-overlay hidden">
-    <div class="modal-card modal-card-wide system-logs-card">
+    <div class="modal-card spatial-card modal-card-wide system-logs-card">
       <div class="modal-header">
         <div class="modal-title">
           <span class="log-title-icon">📜</span>

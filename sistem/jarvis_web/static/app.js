@@ -1179,6 +1179,7 @@ function toggleChat(forceOpen = null) {
   
   if (shouldOpen) {
     logContainer.classList.remove("collapsed");
+    window.antigravity?.animateChatOpen(logContainer);
     if (toastEl) toastEl.classList.add("hidden");
     const btnToggle = $("btn-toggle-log");
     if (btnToggle) btnToggle.classList.add("active");
@@ -1345,6 +1346,8 @@ function updateQrView() {
 async function openQrModal() {
   if (!qrModal) return;
   qrModal.classList.remove("hidden");
+  const card = qrModal.querySelector(".modal-card");
+  if (card) window.antigravity?.animateModalOpen(card);
 
   try {
     const res = await fetch("/api/connection-info");
@@ -1784,6 +1787,8 @@ window.showReportModal = function(title, content, meta = '', rawMd = '') {
   metaEl.textContent  = meta || '';
   bodyEl.innerHTML    = _markdownToHtml(content || '');
   modal.classList.remove('hidden');
+  const card = modal.querySelector('.modal-card');
+  if (card) window.antigravity?.animateModalOpen(card);
 };
 
 window.closeReportModal = function() {
@@ -1918,6 +1923,7 @@ window.toggleSwarmConsole = function() {
   const isHidden = panel.classList.contains('hidden');
   if (isHidden) {
     panel.classList.remove('hidden');
+    window.antigravity?.animateModalOpen(panel);
     _connectSwarmWs();
     _fetchSwarmTasksHttp();
   } else {
@@ -2054,6 +2060,8 @@ window.toggleSystemLogs = function() {
   const isHidden = modal.classList.contains('hidden');
   if (isHidden) {
     modal.classList.remove('hidden');
+    const card = modal.querySelector('.modal-card');
+    if (card) window.antigravity?.animateModalOpen(card);
     window.refreshSystemLogs();
   } else {
     modal.classList.add('hidden');
@@ -2262,3 +2270,159 @@ window.addEventListener('load', () => {
   setTimeout(_checkCompanionStatus, 1500);
   setTimeout(window.refreshSystemLogs, 1000);
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ── ANTIGRAVITY SPATIAL & MOTION CONTROLLER (GSAP + 3D PARALLAX + SHEEN) ────
+// ═════════════════════════════════════════════════════════════════════════════
+
+class AntigravitySpatialEngine {
+  constructor() {
+    this.hasGsap = typeof window.gsap !== 'undefined';
+    this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.spatialCards = [];
+    this.init();
+  }
+
+  init() {
+    if (this.reducedMotion) return;
+
+    this.cacheCards();
+    this.bindGlobalParallax();
+    this.startParallaxLoop();
+    this.triggerEntranceAnimation();
+
+    // Dinamik yeni eklenen kartlar için MutationObserver
+    try {
+      const observer = new MutationObserver(() => this.cacheCards());
+      observer.observe(document.body, { childList: true, subtree: true });
+    } catch (_) {}
+  }
+
+  cacheCards() {
+    this.spatialCards = Array.from(document.querySelectorAll('.spatial-card, .antigravity-pod'));
+    this.spatialCards.forEach(card => {
+      if (card._hasAntigravity) return;
+      card._hasAntigravity = true;
+
+      card.addEventListener('mousemove', (e) => this.handleCardMouseMove(e, card), { passive: true });
+      card.addEventListener('mouseleave', () => this.handleCardMouseLeave(card), { passive: true });
+    });
+  }
+
+  handleCardMouseMove(e, card) {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Speküler yansıma merkezi
+    card.style.setProperty('--sheen-x', `${x.toFixed(1)}px`);
+    card.style.setProperty('--sheen-y', `${y.toFixed(1)}px`);
+    card.style.setProperty('--sheen-opacity', '1');
+
+    // Yumuşak kart eğilimi (micro 3D tilt)
+    const normX = (x / rect.width - 0.5) * 2;
+    const normY = (y / rect.height - 0.5) * 2;
+    const tiltX = -normY * 4.5;
+    const tiltY = normX * 4.5;
+
+    card.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);
+    card.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`);
+  }
+
+  handleCardMouseLeave(card) {
+    card.style.setProperty('--sheen-opacity', '0');
+    card.style.setProperty('--tilt-x', '0deg');
+    card.style.setProperty('--tilt-y', '0deg');
+  }
+
+  bindGlobalParallax() {
+    window.addEventListener('mousemove', (e) => {
+      this.mouse.targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+      this.mouse.targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+    }, { passive: true });
+  }
+
+  startParallaxLoop() {
+    const loop = () => {
+      // Spring interpolation (lerp)
+      this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.06;
+      this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.06;
+
+      const grid = document.querySelector('.hud-spatial-grid');
+      if (grid) {
+        grid.style.transform = `rotateX(60deg) translateZ(-80px) translateX(${(this.mouse.x * -16).toFixed(1)}px) translateY(${(this.mouse.y * -8).toFixed(1)}px)`;
+      }
+
+      const ambient = document.querySelector('.hud-ambient-glow');
+      if (ambient) {
+        ambient.style.transform = `translate3d(${(this.mouse.x * 18).toFixed(1)}px, ${(this.mouse.y * 18).toFixed(1)}px, 0)`;
+      }
+
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  triggerEntranceAnimation() {
+    if (this.hasGsap && window.gsap) {
+      const tl = window.gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      // HUD Üst Sol: 3D rotasyonla yumuşak süzülme
+      tl.from('#hud-top-left', {
+        duration: 1.1,
+        y: -45,
+        rotationX: 20,
+        opacity: 0
+      }, 0.1);
+
+      // HUD Üst Sağ: Kontrol kapsülü süzülüşü
+      tl.from('#hud-top-right', {
+        duration: 1.1,
+        y: -45,
+        rotationX: 20,
+        opacity: 0
+      }, 0.2);
+
+      // Butonların sırayla kademeli (staggered) belirmesi
+      tl.from('.btn-hud-action, .visualizer-capsule', {
+        duration: 0.8,
+        scale: 0.82,
+        opacity: 0,
+        stagger: 0.05,
+        ease: 'back.out(1.5)'
+      }, 0.35);
+
+      // HUD Alt Komut Adası: Ağırlıksız yukarı yükseliş
+      tl.from('#hud-bottom', {
+        duration: 1.2,
+        y: 65,
+        rotationX: -20,
+        opacity: 0
+      }, 0.25);
+    }
+  }
+
+  animateModalOpen(modalCard) {
+    if (!modalCard || this.reducedMotion) return;
+    if (this.hasGsap && window.gsap) {
+      window.gsap.fromTo(modalCard,
+        { scale: 0.88, opacity: 0, rotationX: 10, y: 25 },
+        { scale: 1, opacity: 1, rotationX: 0, y: 0, duration: 0.42, ease: 'power3.out' }
+      );
+    }
+  }
+
+  animateChatOpen(logContainer) {
+    if (!logContainer || this.reducedMotion) return;
+    if (this.hasGsap && window.gsap) {
+      window.gsap.fromTo(logContainer,
+        { scale: 0.92, opacity: 0, rotationX: 14, y: 32 },
+        { scale: 1, opacity: 1, rotationX: 0, y: 0, duration: 0.38, ease: 'power3.out' }
+      );
+    }
+  }
+}
+
+// Antigravity Uzaysal Hareket Motorunu Başlat
+window.antigravity = new AntigravitySpatialEngine();

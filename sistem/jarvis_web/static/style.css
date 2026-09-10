@@ -1,20 +1,27 @@
 /* ═════════════════════════════════════════════════════════════════════════════
-   U.L.T.R.O.N — Neural Nexus Design System & Modern Cinematic Theme
+   U.L.T.R.O.N — Antigravity Spatial Design System & Glassmorphic Neural Theme
    ═════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* Renk Paleti (Cyber & Deep Cosmic Obsidian) */
   --bg-base: #06070a;
-  --bg-surface: rgba(14, 12, 18, 0.78);
-  --bg-surface-elevated: rgba(22, 18, 28, 0.90);
-  --bg-glass: rgba(18, 14, 24, 0.65);
+  --bg-surface: rgba(14, 16, 26, 0.72);
+  --bg-surface-elevated: rgba(18, 22, 34, 0.88);
+  --bg-glass: rgba(16, 18, 28, 0.60);
+  --bg-glass-card: rgba(14, 16, 26, 0.68);
+  
+  /* Antigravity Glassmorphism & Specular Işıma */
+  --glass-blur: blur(24px) saturate(190%);
+  --border-specular: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-subtle-glow: rgba(255, 68, 34, 0.28);
   
   /* ULTRON Çekirdek Vurgu Renkleri */
   --ultron: #ff4422;
   --ultron-glow: #ff5e3a;
   --ultron-gradient: linear-gradient(135deg, #ff4422, #ff7733);
   --ultron-subtle: rgba(255, 68, 34, 0.12);
-  --ultron-border: rgba(255, 68, 34, 0.28);
+  --ultron-border: rgba(255, 68, 34, 0.32);
   
   /* Vurgu ve Telemetri */
   --amber: #ffaa30;
@@ -26,9 +33,8 @@
   
   /* Tipografi Renkleri */
   --text-primary: #ffffff;
-  --text-secondary: #e4dde0;
-  --text-muted: #8c8288;
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-secondary: #e8e4e6;
+  --text-muted: #958d92;
   
   /* Font Aileleri */
   --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -38,6 +44,12 @@
   /* Geçiş & Yaylanma Eğrileri */
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+
+  /* Ağırlıksız (Weightless) Çok Katmanlı Gölgeler */
+  --shadow-weightless: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --shadow-weightless-glow: 0 24px 60px -8px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 68, 34, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 32px rgba(255, 68, 34, 0.2);
+  --shadow-modal-spatial: 0 36px 95px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 45px rgba(255, 68, 34, 0.22);
 }
 
 /* ── Temel Sıfırlama & Sayfa Yapısı ─────────────────────────────────────────── */
@@ -58,6 +70,9 @@ html, body {
   user-select: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 /* ── 3D Orb Arka Plan Sahnesi ─────────────────────────────────────────────────── */
@@ -74,7 +89,36 @@ html, body {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 68, 34, 0.09) 0%, transparent 68%);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 68, 34, 0.10) 0%, rgba(136, 34, 255, 0.04) 45%, transparent 72%);
+  animation: ambientCosmicBreathing 12s ease-in-out infinite alternate;
+}
+
+@keyframes ambientCosmicBreathing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+
+/* Holografik Uzaysal Derinlik Izgarası (Spatial Isometric Grid) */
+.hud-spatial-grid {
+  position: fixed;
+  inset: -15%;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 55px 55px;
+  transform: rotateX(60deg) translateZ(-80px);
+  transform-origin: 50% 65%;
+  opacity: 0.55;
+  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.8) 0%, transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.8) 0%, transparent 68%);
+  animation: spatialGridDrift 45s linear infinite;
+}
+
+@keyframes spatialGridDrift {
+  0% { transform: rotateX(60deg) translateZ(-80px) translateY(0); }
+  100% { transform: rotateX(60deg) translateZ(-80px) translateY(55px); }
 }
 
 .hud-vignette {
@@ -82,7 +126,66 @@ html, body {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(circle at center, transparent 45%, rgba(6, 7, 10, 0.88) 100%);
+  background: radial-gradient(circle at center, transparent 40%, rgba(6, 7, 10, 0.88) 100%);
+}
+
+/* ── Antigravity Pods & Spatial Card Motion Core ────────────────────────────── */
+.antigravity-pod,
+.spatial-card {
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  position: relative;
+  transition: transform 0.28s var(--ease-smooth), box-shadow 0.28s var(--ease-smooth), border-color 0.28s ease;
+}
+
+/* Dinamik İmleç Takip Eden Speküler Işık Şeffaf Katmanı */
+.antigravity-pod::before,
+.spatial-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    320px circle at var(--sheen-x, 50%) var(--sheen-y, 50%),
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 68, 34, 0.05) 40%,
+    transparent 72%
+  );
+  opacity: var(--sheen-opacity, 0);
+  transition: opacity 0.35s ease;
+  z-index: 2;
+}
+
+.antigravity-pod:hover::before,
+.spatial-card:hover::before {
+  --sheen-opacity: 1;
+}
+
+/* Doğal Sıfır Yerçekimi Salınımı (Organic Zero-G Levitation) */
+#hud-top-left.antigravity-pod {
+  animation: antigravityFloatA 6.5s ease-in-out infinite alternate;
+}
+#hud-top-right.antigravity-pod {
+  animation: antigravityFloatB 7.2s ease-in-out infinite alternate;
+}
+#hud-bottom.antigravity-pod {
+  animation: antigravityFloatC 6s ease-in-out infinite alternate;
+}
+
+@keyframes antigravityFloatA {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+  100% { transform: translate3d(0, -6px, 8px) rotateX(0.8deg) rotateY(-0.6deg); }
+}
+
+@keyframes antigravityFloatB {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+  100% { transform: translate3d(0, -7px, 10px) rotateX(-0.7deg) rotateY(0.7deg); }
+}
+
+@keyframes antigravityFloatC {
+  0% { transform: translate3d(-50%, 0, 0) rotateX(0deg); }
+  100% { transform: translate3d(-50%, -5px, 12px) rotateX(0.7deg); }
 }
 
 /* ── HUD Üst Sol: Marka ve Durum Göstergesi ──────────────────────────────────── */
@@ -94,7 +197,7 @@ html, body {
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .brand {
@@ -108,10 +211,11 @@ html, body {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 3px;
-  background: linear-gradient(135deg, #ffffff 40%, #ff6644 100%);
+  background: linear-gradient(135deg, #ffffff 30%, #ff8866 70%, #ff4422 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 24px rgba(255, 68, 34, 0.35);
+  text-shadow: 0 0 24px rgba(255, 68, 34, 0.4);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
 .brand .sub {
@@ -121,10 +225,11 @@ html, body {
   letter-spacing: 2px;
   color: var(--amber);
   background: rgba(255, 170, 48, 0.12);
-  border: 1px solid rgba(255, 170, 48, 0.28);
-  padding: 3px 8px;
+  border: 1px solid rgba(255, 170, 48, 0.32);
+  padding: 3px 10px;
   border-radius: 9999px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Durum Rozeti (Modern Glowing Pill) */
@@ -136,13 +241,13 @@ html, body {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1.5px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: 9999px;
-  background: var(--bg-glass);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  backdrop-filter: blur(14px);
+  backdrop-filter: var(--glass-blur);
   color: var(--amber);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-weightless);
   transition: all 0.3s var(--ease-smooth);
 }
 
@@ -151,13 +256,13 @@ html, body {
   height: 7px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 10px currentColor;
+  box-shadow: 0 0 12px currentColor;
   animation: statusPulse 2s infinite ease-in-out;
 }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.2); }
+  50% { opacity: 1; transform: scale(1.25); filter: drop-shadow(0 0 4px currentColor); }
 }
 
 /* 15 Sistem Durumu Özel Renkleri */
@@ -252,32 +357,40 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--bg-glass);
-  padding: 6px 10px;
+  background: var(--bg-surface);
+  padding: 6px 12px;
   border-radius: 9999px;
-  border: 1px solid var(--border-subtle);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-specular);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-weightless);
+  transform-style: preserve-3d;
+  transition: transform 0.25s var(--ease-smooth), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.top-actions:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: var(--shadow-weightless-glow);
 }
 
 /* Ses Spektrum Kapsülü */
 .visualizer-capsule {
   display: flex;
   align-items: center;
-  padding: 0 8px;
-  height: 28px;
+  padding: 0 10px;
+  height: 30px;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 #audio-visualizer {
   display: block;
 }
 
-/* Üst Butonlar */
+/* Üst Butonlar (Weightless Tactile Pills) */
 .btn-hud-action {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid transparent;
   border-radius: 9999px;
   padding: 6px 14px;
@@ -290,18 +403,25 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s var(--ease-smooth);
+  transition: all 0.25s var(--ease-smooth);
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-hud-action:hover {
   color: #ffffff;
-  background: rgba(255, 68, 34, 0.15);
+  background: rgba(255, 68, 34, 0.16);
   border-color: var(--ultron-border);
-  box-shadow: 0 0 16px rgba(255, 68, 34, 0.25);
+  box-shadow: 0 0 18px rgba(255, 68, 34, 0.35);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn-hud-action:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .btn-hud-action.icon-only {
-  padding: 6px 10px;
+  padding: 6px 11px;
   font-size: 13px;
 }
 
@@ -377,6 +497,7 @@ html, body {
 }
 
 /* ── Katlanabilir Sohbet Konsolu (#log-container) ───────────────────────────── */
+/* ── Katlanabilir Sohbet Konsolu (#log-container) ───────────────────────────── */
 #hud-center {
   position: fixed;
   bottom: 104px;
@@ -385,25 +506,27 @@ html, body {
   width: min(92vw, 680px);
   z-index: 35;
   pointer-events: none;
+  perspective: 1200px;
 }
 
 #log-container {
   background: var(--bg-surface-elevated);
-  backdrop-filter: blur(28px);
-  border: 1px solid var(--ultron-border);
-  border-radius: 18px;
-  padding: 16px 20px 20px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), 0 0 32px rgba(255, 68, 34, 0.15);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-specular);
+  border-radius: 22px;
+  padding: 18px 22px 22px;
+  box-shadow: var(--shadow-modal-spatial);
   pointer-events: auto;
-  max-height: 52vh;
+  max-height: 54vh;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s var(--ease-smooth);
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateZ(16px);
+  transition: all 0.35s var(--ease-spring);
 }
 
 #log-container.collapsed {
   opacity: 0;
-  transform: scale(0.96) translateY(24px);
+  transform: perspective(1000px) rotateX(15deg) translateY(36px) translateZ(-40px) scale(0.94);
   pointer-events: none;
   max-height: 0;
   padding: 0;
@@ -434,12 +557,13 @@ html, body {
 
 .log-title-icon {
   color: var(--ultron);
+  filter: drop-shadow(0 0 8px var(--ultron-glow));
 }
 
 .log-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .log-header-btn {
@@ -447,21 +571,22 @@ html, body {
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   border-radius: 8px;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  transition: all 0.2s ease;
+  transition: all 0.25s var(--ease-smooth);
 }
 
 .log-header-btn:hover {
   color: #ffffff;
   background: rgba(255, 68, 34, 0.2);
   border-color: var(--ultron);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 14px rgba(255, 68, 34, 0.4);
 }
 
 .log-header-btn.copied,
@@ -469,7 +594,7 @@ html, body {
   color: #10b981 !important;
   border-color: rgba(16, 185, 129, 0.6) !important;
   background: rgba(16, 185, 129, 0.15) !important;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.35) !important;
 }
 
 #log {
@@ -478,7 +603,7 @@ html, body {
   font-size: 13.5px;
   line-height: 1.65;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 68, 34, 0.3) transparent;
+  scrollbar-color: rgba(255, 68, 34, 0.35) transparent;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -486,40 +611,55 @@ html, body {
 }
 
 #log::-webkit-scrollbar { width: 4px; }
-#log::-webkit-scrollbar-thumb { background: rgba(255, 68, 34, 0.3); border-radius: 9999px; }
+#log::-webkit-scrollbar-thumb { background: rgba(255, 68, 34, 0.35); border-radius: 9999px; }
 
-/* Mesaj Baloncukları */
+/* Mesaj Baloncukları (Spatial Floating Cards) */
 #log .row {
   display: flex;
   flex-direction: column;
   gap: 4px;
   max-width: 90%;
   word-wrap: break-word;
-  animation: messageFadeIn 0.25s ease;
+  animation: messageFadeIn 0.3s var(--ease-smooth);
+  transform-style: preserve-3d;
 }
 
 @keyframes messageFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 #log .row-user {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(255, 170, 48, 0.15), rgba(255, 68, 34, 0.22));
-  border: 1px solid rgba(255, 170, 48, 0.35);
-  border-radius: 14px 14px 2px 14px;
+  background: linear-gradient(135deg, rgba(255, 170, 48, 0.18), rgba(255, 68, 34, 0.25));
+  border: 1px solid rgba(255, 170, 48, 0.4);
+  border-radius: 16px 16px 4px 16px;
   padding: 10px 16px;
   color: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+#log .row-user:hover {
+  transform: translateZ(6px);
+  box-shadow: 0 8px 24px rgba(255, 68, 34, 0.25);
 }
 
 #log .row-jarvis {
   align-self: flex-start;
-  background: rgba(20, 16, 26, 0.85);
-  border: 1px solid rgba(255, 68, 34, 0.25);
+  background: rgba(18, 22, 34, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-left: 3px solid var(--ultron);
-  border-radius: 2px 14px 14px 14px;
+  border-radius: 4px 16px 16px 16px;
   padding: 10px 16px;
   color: var(--text-secondary);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+#log .row-jarvis:hover {
+  transform: translateZ(6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
 #log .row-sys {
@@ -527,10 +667,11 @@ html, body {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 14px;
   border-radius: 9999px;
   border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(8px);
 }
 
 #log .who-user {
@@ -558,13 +699,13 @@ html, body {
   background: var(--bg-surface-elevated);
   border: 1px solid rgba(255, 170, 48, 0.45);
   border-radius: 9999px;
-  padding: 10px 24px;
+  padding: 10px 26px;
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 500;
   letter-spacing: 0.3px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 170, 48, 0.2);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 28px rgba(255, 170, 48, 0.22);
   z-index: 30;
   transition: all 0.3s var(--ease-smooth);
   pointer-events: none;
@@ -577,7 +718,7 @@ html, body {
 
 .hud-toast.hidden {
   opacity: 0;
-  transform: translateX(-50%) translateY(14px);
+  transform: translateX(-50%) translateY(16px);
 }
 
 /* ── Alt Komut Adası (Floating Command Island) ──────────────────────────────── */
@@ -592,6 +733,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  perspective: 1000px;
 }
 
 .main-controls {
@@ -600,16 +742,19 @@ html, body {
   gap: 10px;
   width: 100%;
   background: var(--bg-surface);
-  backdrop-filter: blur(24px);
-  padding: 8px 12px;
+  backdrop-filter: var(--glass-blur);
+  padding: 8px 14px;
   border-radius: 9999px;
-  border: 1px solid var(--ultron-border);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 68, 34, 0.18);
-  transition: border-color 0.3s ease;
+  border: 1px solid var(--border-specular);
+  box-shadow: var(--shadow-weightless-glow);
+  transition: all 0.3s var(--ease-smooth);
+  transform-style: preserve-3d;
 }
 
 .main-controls:focus-within {
-  border-color: rgba(255, 68, 34, 0.55);
+  border-color: rgba(255, 68, 34, 0.65);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 68, 34, 0.5), 0 0 35px rgba(255, 68, 34, 0.3);
+  transform: translateZ(8px);
 }
 
 /* Mikrofon Butonu */
@@ -621,35 +766,36 @@ html, body {
   justify-content: center;
   gap: 8px;
   height: 44px;
-  padding: 0 18px;
+  padding: 0 20px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(255, 68, 34, 0.25), rgba(255, 119, 51, 0.3));
+  background: linear-gradient(135deg, rgba(255, 68, 34, 0.3), rgba(255, 119, 51, 0.35));
   border: 1px solid var(--ultron-glow);
   color: #ffffff;
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   cursor: pointer;
-  transition: all 0.25s var(--ease-smooth);
-  box-shadow: 0 0 18px rgba(255, 68, 34, 0.35);
+  transition: all 0.28s var(--ease-spring);
+  box-shadow: 0 0 20px rgba(255, 68, 34, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform-style: preserve-3d;
 }
 
 .ctl-mic:hover {
   background: var(--ultron-gradient);
-  box-shadow: 0 0 28px rgba(255, 68, 34, 0.6);
-  transform: scale(1.03);
+  box-shadow: 0 0 32px rgba(255, 68, 34, 0.7);
+  transform: translateZ(8px) scale(1.04);
 }
 
 .ctl-mic.on {
   background: var(--ultron-gradient);
   border-color: #fff;
-  box-shadow: 0 0 32px rgba(255, 68, 34, 0.8);
+  box-shadow: 0 0 38px rgba(255, 68, 34, 0.9);
 }
 
 .mic-wave-ring {
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   border-radius: 9999px;
   border: 1px solid var(--ultron);
   opacity: 0;
@@ -661,8 +807,8 @@ html, body {
 }
 
 @keyframes micRingPulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.4); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.45); opacity: 0; }
 }
 
 /* Komut Giriş Alanı */
@@ -681,15 +827,16 @@ html, body {
 #text-input {
   width: 100%;
   height: 44px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.42);
   border: 1px solid var(--border-subtle);
   border-radius: 9999px;
-  padding: 0 46px 0 18px;
+  padding: 0 48px 0 20px;
   color: #ffffff;
   font-family: var(--font-body);
   font-size: 13.5px;
   outline: none;
-  transition: all 0.25s ease;
+  transition: all 0.25s var(--ease-smooth);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 #text-input::placeholder {
@@ -698,30 +845,32 @@ html, body {
 }
 
 #text-input:focus {
-  border-color: rgba(255, 68, 34, 0.45);
-  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 68, 34, 0.55);
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 68, 34, 0.25);
 }
 
 .btn-submit {
   position: absolute;
-  right: 5px;
+  right: 6px;
   width: 34px;
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 68, 34, 0.2);
+  background: rgba(255, 68, 34, 0.22);
   color: var(--ultron-glow);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.25s var(--ease-smooth);
 }
 
 .btn-submit:hover {
   background: var(--ultron);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 68, 34, 0.5);
+  box-shadow: 0 0 16px rgba(255, 68, 34, 0.6);
+  transform: scale(1.08);
 }
 
 /* Yan İkon Butonları */
@@ -743,16 +892,16 @@ html, body {
 
 .ctl-icon:hover {
   color: #ffffff;
-  background: rgba(255, 68, 34, 0.18);
+  background: rgba(255, 68, 34, 0.2);
   border-color: var(--ultron-border);
-  box-shadow: 0 0 16px rgba(255, 68, 34, 0.3);
-  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(255, 68, 34, 0.4);
+  transform: translateZ(8px) scale(1.08);
 }
 
 .ctl-icon.on {
   background: rgba(0, 245, 255, 0.2);
   border-color: var(--cyan);
-  box-shadow: 0 0 16px var(--cyan-glow);
+  box-shadow: 0 0 18px var(--cyan-glow);
 }
 
 #build-stamp {
@@ -770,9 +919,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 5, 8, 0.78);
-  backdrop-filter: blur(20px);
-  transition: opacity 0.25s ease;
+  background: rgba(4, 5, 8, 0.82);
+  backdrop-filter: blur(24px);
+  perspective: 1200px;
+  transition: opacity 0.3s var(--ease-smooth);
 }
 
 .modal-overlay.hidden {
@@ -781,22 +931,24 @@ html, body {
 }
 
 .modal-card {
-  width: min(92vw, 480px);
+  width: min(92vw, 490px);
   background: var(--bg-surface-elevated);
-  border: 1px solid var(--ultron-border);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 68, 34, 0.2);
-  animation: modalPop 0.3s var(--ease-bounce);
+  border: 1px solid var(--border-specular);
+  border-radius: 24px;
+  padding: 26px;
+  box-shadow: var(--shadow-modal-spatial);
+  backdrop-filter: blur(28px) saturate(200%);
+  animation: modalPop 0.35s var(--ease-spring);
+  transform-style: preserve-3d;
 }
 
 .modal-card.report-card-wide {
-  width: min(94vw, 760px);
+  width: min(94vw, 780px);
 }
 
 @keyframes modalPop {
-  0% { transform: scale(0.92); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: scale(0.9) translateY(20px) rotateX(8deg); opacity: 0; }
+  100% { transform: scale(1) translateY(0) rotateX(0deg); opacity: 1; }
 }
 
 .modal-header {
@@ -1342,3 +1494,22 @@ html, body {
 .system-log-line.info    { color: #d0f0fd; }
 .system-log-line.warning { color: #fed7aa; }
 .system-log-line.error   { color: #fecdd3; background: rgba(255, 51, 68, 0.08); border-radius: 4px; padding: 2px 6px; }
+
+/* ── Antigravity Prefers-Reduced-Motion & Accessibility ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .antigravity-pod,
+  .spatial-card {
+    animation: none !important;
+    transform: none !important;
+  }
+  #hud-bottom.antigravity-pod {
+    transform: translateX(-50%) !important;
+  }
+}
