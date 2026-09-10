@@ -425,10 +425,25 @@ function connect() {
         break;
 
 
-      case "proactive_alert":
+      case "proactive_alert": {
         playAlertChime();
         stateManager.pushTransientState("WARNING", 3500, "⏰ ALARM / HATIRLATICI");
-        addLog("alert", obj.text);
+        const alertData = obj.alert || obj;
+        let alertMsg = obj.text;
+        if (!alertMsg && alertData) {
+          alertMsg = alertData.message || alertData.title || (typeof alertData === "string" ? alertData : null);
+        }
+        if (alertMsg && alertMsg !== "undefined" && String(alertMsg).trim() !== "") {
+          addLog("alert", String(alertMsg).trim());
+        }
+        if (typeof showProactiveAlert === "function") {
+          showProactiveAlert(alertData);
+        }
+        break;
+      }
+
+      case "system_notice":
+        if (obj.text) addLog("sys", obj.text);
         break;
 
       case "agent_event":
@@ -520,9 +535,7 @@ function connect() {
         }
         break;
 
-      case "proactive_alert":
-        showProactiveAlert(obj.alert || obj);
-        break;
+
 
       case "mcp_status":
         addLog("sys", `🔌 MCP Sunucuları: ${obj.active_servers || 0} aktif / ${obj.total_mcp_tools || 0} araç hazır.`);

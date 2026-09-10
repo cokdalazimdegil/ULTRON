@@ -39,16 +39,20 @@ def _get_face_cascade():
     if _CASCADE_FAILED:
         return None
     try:
+        if not hasattr(cv2, "data") or not hasattr(cv2, "CascadeClassifier"):
+            logger.info("[ObserverDaemon] OpenCV CascadeClassifier modülü bulunamadı; hafif varlık tespit modunda çalışılıyor.")
+            _CASCADE_FAILED = True
+            return None
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         cascade = cv2.CascadeClassifier(cascade_path)
         if cascade.empty():
-            logger.warning("[ObserverDaemon] Haar cascade dosyası boş veya bulunamadı. Yüz algılama devre dışı.")
+            logger.info("[ObserverDaemon] Haar cascade dosyası boş veya bulunamadı. Yüz algılama devre dışı.")
             _CASCADE_FAILED = True
             return None
         FACE_CASCADE = cascade
         return FACE_CASCADE
     except Exception as exc:
-        logger.warning(f"[ObserverDaemon] Yüz algılama modülü yüklenemedi, atlanıyor ({exc})")
+        logger.info(f"[ObserverDaemon] Yüz algılama modülü yüklenemedi, atlanıyor ({exc})")
         _CASCADE_FAILED = True
         return None
 

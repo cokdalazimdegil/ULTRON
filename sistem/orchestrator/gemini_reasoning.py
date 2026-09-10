@@ -32,19 +32,31 @@ def _get_api_key() -> str:
 def _extract_text(response: Any) -> str:
     if not response:
         return ""
-    text = str(getattr(response, "text", "") or "").strip()
-    if text:
-        return text
-    candidates = getattr(response, "candidates", None) or []
-    chunks: List[str] = []
-    for candidate in candidates:
-        content = getattr(candidate, "content", None)
-        parts = getattr(content, "parts", None) or []
-        for part in parts:
-            part_text = str(getattr(part, "text", "") or "").strip()
-            if part_text:
-                chunks.append(part_text)
-    return "\n".join(chunk for chunk in chunks if chunk).strip()
+    try:
+        candidates = getattr(response, "candidates", None) or []
+        chunks: List[str] = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) or []
+            for part in parts:
+                if getattr(part, "thought", False):
+                    continue
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    chunks.append(str(part_text).strip())
+        if chunks:
+            return "\n".join(chunks).strip()
+    except Exception:
+        pass
+
+    try:
+        text = str(getattr(response, "text", "") or "").strip()
+        if text:
+            return text
+    except Exception:
+        pass
+
+    return ""
 
 def query_gemini_reasoning(
     prompt: str,
@@ -54,9 +66,9 @@ def query_gemini_reasoning(
     image_bytes: Optional[bytes] = None,
     image_mime: str = "image/jpeg"
 ) -> str:
-    # 1. JSON veya ReAct ajanlığı gerekmiyorsa ve görsel yoksa OpenClaw AI beynini kullan
+    # 1. JSON veya ReAct ajanlığı gerekmiyorsa, görsel yoksa ve 'pro' seviye derin analiz istenmişse OpenClaw AI beynini kullan
     is_strict_json = any(k in system_instruction.lower() for k in ("json", "react", "katı", "formatında"))
-    if not image_bytes and not is_strict_json:
+    if model_tier.lower() == "pro" and not image_bytes and not is_strict_json:
         try:
             from core.openclaw_brain import openclaw_brain
             full_prompt = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt

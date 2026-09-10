@@ -456,7 +456,22 @@ def execute_tool(name: str, args: dict) -> str:
         if name in ("ask_openclaw_brain", "openclaw_brain_query"):
             from core.openclaw_brain import openclaw_brain
             query = args.get("query") or args.get("instruction") or args.get("message") or ""
-            return openclaw_brain.ask(query)
+            res = openclaw_brain.ask_with_fallback(query)
+            if len(res) > 250:
+                try:
+                    from jarvis_web.server import broadcast_system_status
+                    import asyncio
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(broadcast_system_status({
+                            "type": "report",
+                            "title": f"Stratejik Analiz: {query[:40]}",
+                            "content": res,
+                            "filename": f"analysis_{int(time.time())}.md"
+                        }))
+                except Exception:
+                    pass
+            return res
 
         if name == "start_swarm_project":
             desc = args.get("project_description", "").strip()
@@ -497,6 +512,20 @@ def execute_tool(name: str, args: dict) -> str:
                             source="research_agent",
                             channels=["web_ui", "tts"]
                         ))
+                        # Rapor modalını Web UI'da otomatik göster
+                        try:
+                            from jarvis_web.server import broadcast_system_status
+                            import asyncio
+                            loop = asyncio.get_event_loop()
+                            if loop.is_running():
+                                asyncio.create_task(broadcast_system_status({
+                                    "type": "report",
+                                    "title": f"Araştırma Raporu: {desc}",
+                                    "content": report,
+                                    "filename": f"research_{int(time.time())}.md"
+                                }))
+                        except Exception:
+                            pass
                     except Exception as e:
                         from core.event_bus import bus
                         bus.publish("ui_alert", f"⚠️ [ARAŞTIRMA HATASI]: '{desc}' araştırmasında hata: {e}")

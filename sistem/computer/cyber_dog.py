@@ -29,7 +29,7 @@ SAFE_PROCESSES = {
 class CyberDogEngine:
     """Otonom Siber Güvenlik Bekçi Köpeği."""
     
-    def __init__(self, patrol_interval_sec: float = 90.0):
+    def __init__(self, patrol_interval_sec: float = 180.0):
         self.patrol_interval_sec = patrol_interval_sec
         self._running = False
         self._thread: Optional[threading.Thread] = None

@@ -124,13 +124,13 @@ class OpenClawBrain:
             env = os.environ.copy()
             if tok:
                 env["OPENCLAW_GATEWAY_TOKEN"] = tok
-            cmd = [exe, "agent", "--session-id", session_id, "--message", prompt_clean, "--timeout", "60", "--json"]
+            cmd = [exe, "agent", "--session-id", session_id, "--message", prompt_clean, "--timeout", "25", "--json"]
             flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
             res = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=70,
+                timeout=28,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
@@ -170,6 +170,45 @@ class OpenClawBrain:
             logger.error("[OpenClaw Brain] Komut yürütme hatası: %s", exc)
 
         return ""
+
+    def ask_with_fallback(self, prompt: str, session_id: str = "default") -> str:
+        """
+        Kullanıcı isteğini OpenClaw Beyni'ne iletir.
+        Eğer OpenClaw gecikir, zaman aşımına uğrar veya yanıt vermezse,
+        otomatik olarak yerel Gemini Pro / Deep Research Synthesizer devreye girer.
+        """
+        if not prompt or not prompt.strip():
+            return ""
+
+        res = self.ask(prompt, session_id=session_id)
+        if res and not res.startswith("⚠️") and len(res.strip()) > 10:
+            return res
+
+        logger.info("[OpenClaw Brain] 🔄 OpenClaw çevrimdışı veya zaman aşımında; ULTRON derin analiz motoru devreye girdi.")
+        # 1. Gemini Pro Derin Akıl Yürütme motoru
+        try:
+            from orchestrator.gemini_reasoning import query_gemini_reasoning
+            system_prompt = (
+                "Sen ULTRON'un otonom stratejik analiz ve derin araştırma beynisin. "
+                "Kullanıcının sorusunu veya araştırma konusunu derinlemesine analiz et, "
+                "yapılandırılmış, net, teknik ve kapsamlı bir stratejik rapor olarak sun."
+            )
+            fallback_res = query_gemini_reasoning(prompt, system_instruction=system_prompt, model_tier="pro", temperature=0.6)
+            if fallback_res and len(fallback_res.strip()) > 20:
+                return fallback_res
+        except Exception as e:
+            logger.debug(f"[OpenClaw Brain] Gemini Pro fallback hatası: {e}")
+
+        # 2. Yerel Araştırma & Web Sentezleme
+        try:
+            from actions.research_engine import simple_web_search
+            search_res = simple_web_search(prompt[:120], max_chars=3000)
+            if search_res:
+                return f"🔍 [Derin Araştırma Bulguları]:\n\n{search_res}"
+        except Exception:
+            pass
+
+        return res or "Derin analiz ve araştırma tamamlanamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin."
 
 # Global singleton örneği
 openclaw_brain = OpenClawBrain()

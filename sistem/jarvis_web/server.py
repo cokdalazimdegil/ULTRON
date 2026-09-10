@@ -250,6 +250,7 @@ class AgentHub:
 
 agent_hub = AgentHub()
 web_clients: "set[LiveBridge]" = set()
+_sent_proactive_alert_ids: set[str] = set()
 
 
 async def broadcast_agent_status():
@@ -1278,12 +1279,21 @@ async def _proactive_cron_worker():
                 active_p_alerts = proactive_watcher.get_active_alerts(limit=5)
                 for pa in active_p_alerts:
                     if pa.get("status") == "PENDING":
-                        proactive_watcher.dismiss_alert(pa["alert_id"])
+                        aid = pa.get("alert_id", "")
+                        if aid and aid in _sent_proactive_alert_ids:
+                            continue
+                        _sent_proactive_alert_ids.add(aid)
+                        proactive_watcher.dismiss_alert(aid)
+                        alert_text = pa.get("message", pa.get("title", "Sistem Uyarısı"))
                         for bridge in list(web_clients):
                             try:
                                 await bridge.send_json({
                                     "type": "proactive_alert",
-                                    "alert": pa
+                                    "alert": pa,
+                                    "alert_id": aid,
+                                    "title": pa.get("title", "Uyarı"),
+                                    "text": alert_text,
+                                    "severity": pa.get("severity", "INFO"),
                                 })
                             except Exception:
                                 pass
@@ -1335,12 +1345,20 @@ async def lifespan(app: FastAPI):
         async def _send():
             for bridge in list(web_clients):
                 try:
-                    await bridge.session.send_client_content(
-                        turns={"parts": [{"text": text}]},
-                        turn_complete=True
-                    )
+                    await bridge.send_json({
+                        "type": "system_notice",
+                        "text": text,
+                    })
                 except Exception:
                     pass
+                if bridge.session:
+                    try:
+                        await bridge.session.send_client_content(
+                            turns={"parts": [{"text": text}]},
+                            turn_complete=True
+                        )
+                    except Exception:
+                        pass
         asyncio.run_coroutine_threadsafe(_send(), loop)
         
     bus.subscribe("ui_alert", _ui_alert_callback)
@@ -1431,10 +1449,13 @@ async def lifespan(app: FastAPI):
             """ProactiveWatcher alert ürettiğinde web istemcilerine push yapar."""
             async def _push():
                 alert_dict = alert.to_dict() if hasattr(alert, 'to_dict') else alert
+                aid = alert_dict.get("alert_id", "")
+                if aid:
+                    _sent_proactive_alert_ids.add(aid)
                 msg = {
                     "type": "proactive_alert",
                     "alert": alert_dict,
-                    "alert_id": alert_dict.get("alert_id", ""),
+                    "alert_id": aid,
                     "title": alert_dict.get("title", "Uyarı"),
                     "text": alert_dict.get("message", ""),
                     "severity": alert_dict.get("severity", "INFO"),
@@ -1682,7 +1703,9 @@ async def send_push_notification_api(payload: dict):
         try:
             await bridge.send_json({
                 "type": "proactive_alert",
-                "alert": {"title": title, "message": body, "url": url}
+                "alert": {"title": title, "message": body, "url": url},
+                "title": title,
+                "text": body,
             })
         except Exception:
             pass
@@ -1950,28 +1973,44 @@ async def get_swarm_tasks_api():
 
 # ── System Logs Ring Buffer & Endpoints ─────────────────────────────────────
 class SystemLogHandler(logging.Handler):
-    """ULTRON log mesajlarını bellekteki dairesel kuyrukta tutar."""
+    """ULTRON log mesajlarını bellekteki dairesel kuyrukta tutar (Dedup korumalı)."""
     def __init__(self, maxlen=350):
         super().__init__()
         self.buffer = deque(maxlen=maxlen)
+        self._last_msg = ""
+        self._last_time = 0.0
 
     def emit(self, record):
         try:
+            msg = record.getMessage()
+            now = record.created
+            # 150ms içinde aynı logger ve aynı mesaj gelirse mükerrer kaydı engelle
+            if msg == self._last_msg and (now - self._last_time) < 0.15:
+                return
+            self._last_msg = msg
+            self._last_time = now
+
             entry = {
-                "time": time.strftime("%H:%M:%S", time.localtime(record.created)),
+                "time": time.strftime("%H:%M:%S", time.localtime(now)),
                 "level": record.levelname,
                 "logger": record.name.replace("ultron.", ""),
-                "message": record.getMessage(),
+                "message": msg,
             }
             self.buffer.append(entry)
         except Exception:
             pass
 
+_sent_proactive_alert_ids: set[str] = set()
+
 system_log_handler = SystemLogHandler()
 system_log_handler.setLevel(logging.INFO)
+
+# Root logger'a idempotent şekilde tek bir handler bağla (ultron logger'ı zaten root'a propagate eder)
+_root_logger = logging.getLogger()
+if not any(isinstance(h, SystemLogHandler) for h in _root_logger.handlers):
+    _root_logger.addHandler(system_log_handler)
+
 logging.getLogger("ultron").setLevel(logging.INFO)
-logging.getLogger("ultron").addHandler(system_log_handler)
-logging.getLogger().addHandler(system_log_handler)
 
 system_log_handler.buffer.append({
     "time": time.strftime("%H:%M:%S"),

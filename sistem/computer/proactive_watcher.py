@@ -155,7 +155,9 @@ class ProactiveWatcherEngine:
         self._alerts: list[ProactiveAlert] = []
         self._max_history = 50
         self._cooldowns: dict[str, float] = {}  # alert_key -> timestamp
-        self._cooldown_period_sec = 60.0        # Aynı hata için 60 saniye bildirim kısıtlaması
+        self._cooldown_period_sec = 120.0       # Genel bildirim kısıtlaması (2 dk)
+        self._cpu_cooldown_sec = 300.0          # CPU alarmları için 5 dk kısıtlama
+        self._cpu_history: list[float] = []     # Anlık CPU sıçramalarını filtreleyen pencere
         
         # Olay Dinleyicileri (WebSocket ve Ses Hattı için)
         self._listeners: list[Callable[[ProactiveAlert], None]] = []
@@ -236,14 +238,20 @@ class ProactiveWatcherEngine:
         now = time.time()
 
         try:
-            cpu_percent = psutil.cpu_percent(interval=None)
+            cpu_sample = psutil.cpu_percent(interval=None)
+            if cpu_sample > 0.0:
+                self._cpu_history.append(cpu_sample)
+                if len(self._cpu_history) > 3:
+                    self._cpu_history.pop(0)
+
+            avg_cpu = sum(self._cpu_history) / len(self._cpu_history) if self._cpu_history else cpu_sample
             ram = psutil.virtual_memory()
             disk = psutil.disk_usage(os.path.abspath(os.sep))
 
-            # 1. Aşırı CPU Kullanımı (> 92%)
-            if cpu_percent > 92.0:
+            # 1. Aşırı CPU Kullanımı: Yalnızca ortalama %94'ün üzerindeyse ve en az 2 örnek varsa
+            if avg_cpu > 94.0 and len(self._cpu_history) >= 2:
                 key = "SYSTEM_HIGH_CPU"
-                if now - self._cooldowns.get(key, 0.0) >= self._cooldown_period_sec:
+                if now - self._cooldowns.get(key, 0.0) >= self._cpu_cooldown_sec:
                     self._cooldowns[key] = now
                     alert = ProactiveAlert(
                         alert_id=f"ALERT-{uuid.uuid4().hex[:8].upper()}",
@@ -251,7 +259,7 @@ class ProactiveWatcherEngine:
                         category=AlertCategory.SYSTEM_STRESS,
                         severity=AlertSeverity.HIGH,
                         title="Yüksek CPU Yükü Tespiti",
-                        message=f"CPU kullanımı kritik seviyede: %{cpu_percent:.1f}",
+                        message=f"CPU kullanımı kritik seviyede: %{avg_cpu:.1f}",
                         suggested_action="Ağır arka plan işlemlerini optimize et veya sınırla",
                         auto_executable=False
                     )
@@ -310,59 +318,66 @@ class ProactiveWatcherEngine:
     def _run_loop(self) -> None:
         logger.info("[Proactive Watcher] 👁️ Arka plan gölge gözlemci aktif.")
         while self._running:
+            sleep_duration = self.check_interval_sec
             try:
                 # 1. Sistem Metriklerini Kontrol Et
                 self.check_system_stress()
 
-                # 2. Ekran Değişimini ve Aktif Pencereyi Gözlemle
-                screen_ctx = screen_awareness.observe_screen(force_full_analysis=False)
-                
-                # Sadece belirgin değişimlerde metin analizi yap (CPU tasarrufu)
-                if screen_ctx.change_severity in (ChangeSeverity.SIGNIFICANT_CHANGE, ChangeSeverity.MAJOR_CHANGE):
-                    active_title = screen_ctx.active_window.get("title", "")
-                    active_proc = screen_ctx.active_window.get("process", "")
-                    
-                    combined_text = active_title + "\n" + "\n".join(screen_ctx.detected_texts)
-                    self.analyze_text_content(combined_text, source_app=active_proc or active_title)
+                # Adaptif CPU kısma: Sistem zaten yüklüyse ekran/OCR analizini atla ve uyku süresini uzat
+                is_high_cpu = bool(self._cpu_history and self._cpu_history[-1] > 80.0)
+                if is_high_cpu:
+                    sleep_duration = max(self.check_interval_sec, 20.0)
 
-                # 3. Görsel (Vision) Derin Analiz - Sadece Hata/Modal Tespit Edilirse ve Cooldown Yoksa
-                if screen_ctx.has_error_box or screen_ctx.has_modal_dialog:
-                    vision_key = f"VISION_ERROR_{screen_ctx.active_window.get('title', '')}"
-                    now = time.time()
-                    if now - self._cooldowns.get(vision_key, 0.0) >= self._cooldown_period_sec * 2:
-                        self._cooldowns[vision_key] = now
-                        from actions.screen_vision import analyze_screen
-                        logger.info(f"[Proactive Watcher] 👁️ Şüpheli ekran aktivitesi ({vision_key}), Vision modeline gönderiliyor...")
-                        prompt = (
-                            "Ekranda bir hata penceresi veya uyarı modalı tespit ettim. "
-                            "Eğer ekranda gerçekten bir hata, kilitlenme, uyarı, veya "
-                            "çözülmesi gereken bir sorun varsa kısaca 1-2 cümleyle ne olduğunu yaz. "
-                            "Eğer tamamen normal veya rutin bir pencereyse SADECE 'YOK' yaz."
-                        )
-                        try:
-                            vision_res = analyze_screen(query=prompt, target="active_window")
-                            if vision_res and "YOK" not in vision_res.upper() and len(vision_res) > 8:
-                                alert = ProactiveAlert(
-                                    alert_id=f"ALERT-{uuid.uuid4().hex[:8].upper()}",
-                                    timestamp=time.time(),
-                                    category=AlertCategory.CODE_ERROR,
-                                    severity=AlertSeverity.HIGH,
-                                    title="Otonom Görsel Tespit (Vision)",
-                                    message=vision_res,
-                                    suggested_action="Düzeltmek için bana sor veya otonom aksiyon başlat.",
-                                    auto_executable=False,
-                                    target_app=screen_ctx.active_window.get("process", "")
-                                )
-                                with self._lock:
-                                    self._alerts.append(alert)
-                                self._broadcast_alert(alert)
-                        except Exception as e:
-                            logger.debug(f"[Proactive Watcher] Vision analizi hatası: {e}")
+                # 2. Ekran Değişimini ve Aktif Pencereyi Gözlemle (Aşırı CPU'da atla)
+                if not (self._cpu_history and self._cpu_history[-1] > 88.0):
+                    screen_ctx = screen_awareness.observe_screen(force_full_analysis=False)
+                    
+                    # Sadece belirgin değişimlerde metin analizi yap (CPU tasarrufu)
+                    if screen_ctx.change_severity in (ChangeSeverity.SIGNIFICANT_CHANGE, ChangeSeverity.MAJOR_CHANGE):
+                        active_title = screen_ctx.active_window.get("title", "")
+                        active_proc = screen_ctx.active_window.get("process", "")
+                        
+                        combined_text = active_title + "\n" + "\n".join(screen_ctx.detected_texts)
+                        self.analyze_text_content(combined_text, source_app=active_proc or active_title)
+
+                    # 3. Görsel (Vision) Derin Analiz - Sadece Hata/Modal Tespit Edilirse ve Cooldown Yoksa
+                    if (screen_ctx.has_error_box or screen_ctx.has_modal_dialog) and not is_high_cpu:
+                        vision_key = f"VISION_ERROR_{screen_ctx.active_window.get('title', '')}"
+                        now = time.time()
+                        if now - self._cooldowns.get(vision_key, 0.0) >= self._cooldown_period_sec * 2:
+                            self._cooldowns[vision_key] = now
+                            from actions.screen_vision import analyze_screen
+                            logger.info(f"[Proactive Watcher] 👁️ Şüpheli ekran aktivitesi ({vision_key}), Vision modeline gönderiliyor...")
+                            prompt = (
+                                "Ekranda bir hata penceresi veya uyarı modalı tespit ettim. "
+                                "Eğer ekranda gerçekten bir hata, kilitlenme, uyarı, veya "
+                                "çözülmesi gereken bir sorun varsa kısaca 1-2 cümleyle ne olduğunu yaz. "
+                                "Eğer tamamen normal veya rutin bir pencereyse SADECE 'YOK' yaz."
+                            )
+                            try:
+                                vision_res = analyze_screen(query=prompt, target="active_window")
+                                if vision_res and "YOK" not in vision_res.upper() and len(vision_res) > 8:
+                                    alert = ProactiveAlert(
+                                        alert_id=f"ALERT-{uuid.uuid4().hex[:8].upper()}",
+                                        timestamp=time.time(),
+                                        category=AlertCategory.CODE_ERROR,
+                                        severity=AlertSeverity.HIGH,
+                                        title="Otonom Görsel Tespit (Vision)",
+                                        message=vision_res,
+                                        suggested_action="Düzeltmek için bana sor veya otonom aksiyon başlat.",
+                                        auto_executable=False,
+                                        target_app=screen_ctx.active_window.get("process", "")
+                                    )
+                                    with self._lock:
+                                        self._alerts.append(alert)
+                                    self._broadcast_alert(alert)
+                            except Exception as e:
+                                logger.debug(f"[Proactive Watcher] Vision analizi hatası: {e}")
 
             except Exception as e:
                 logger.debug(f"[Proactive Watcher] Döngü adımı hatası: {e}")
 
-            time.sleep(self.check_interval_sec)
+            time.sleep(sleep_duration)
 
     def start_watcher(self) -> None:
         """Gözlemci arka plan iş parçacığını başlatır."""

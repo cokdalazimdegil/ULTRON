@@ -65,7 +65,28 @@ class GeminiProvider(AIProvider):
                 contents=prompt,
                 config=config
             )
-            text = response.text or ""
+            text = ""
+            try:
+                candidates = getattr(response, "candidates", None) or []
+                chunks = []
+                for candidate in candidates:
+                    content = getattr(candidate, "content", None)
+                    parts = getattr(content, "parts", None) or []
+                    for part in parts:
+                        if getattr(part, "thought", False):
+                            continue
+                        part_text = getattr(part, "text", None)
+                        if part_text:
+                            chunks.append(str(part_text).strip())
+                if chunks:
+                    text = "\n".join(chunks).strip()
+            except Exception:
+                pass
+            if not text:
+                try:
+                    text = response.text or ""
+                except Exception:
+                    text = ""
             return AICompletionResponse(
                 text=text,
                 provider_name="Gemini",
