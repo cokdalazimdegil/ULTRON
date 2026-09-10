@@ -1,4 +1,4 @@
-﻿# JARVIS — Windows .exe derleyici
+# ULTRON — Windows .exe derleyici
 #
 # Kullanim:
 #   powershell -ExecutionPolicy Bypass -File build_exe.ps1
@@ -6,7 +6,7 @@
 #   powershell -ExecutionPolicy Bypass -File build_exe.ps1 -OneFile   # tek dosya
 #   powershell -ExecutionPolicy Bypass -File build_exe.ps1 -Clean     # sifirdan
 #
-# Cikti: dist\JARVIS\JARVIS.exe  (yaninda _internal klasoru ile birlikte)
+# Cikti: dist\ULTRON\ULTRON.exe  (yaninda _internal klasoru ile birlikte)
 #
 # NOT: Tek dosya (-OneFile) her acilista paketi gecici klasore actigi icin
 # baslangici ~10 sn daha yavaslatir. Varsayilan (klasor) surumu onerilir.
@@ -29,7 +29,7 @@ if (-not (Test-Path $PY)) {
 }
 
 Write-Host ""
-Write-Host "J.A.R.V.I.S  —  .exe derleniyor" -ForegroundColor Cyan
+Write-Host "U.L.T.R.O.N  —  .exe derleniyor" -ForegroundColor Cyan
 Write-Host ""
 
 # PyInstaller kurulu mu
@@ -72,11 +72,14 @@ if ($Clean) {
     }
 }
 
-$env:JARVIS_CONSOLE = if ($Console) { "1" } else { "0" }
-$env:JARVIS_ONEFILE = if ($OneFile) { "1" } else { "0" }
+$env:ULTRON_CONSOLE = if ($Console) { "1" } else { "0" }
+$env:ULTRON_ONEFILE = if ($OneFile) { "1" } else { "0" }
+$env:JARVIS_CONSOLE = $env:ULTRON_CONSOLE
+$env:JARVIS_ONEFILE = $env:ULTRON_ONEFILE
 
 Write-Host "PyInstaller calisiyor (birkac dakika surebilir)..."
-& $PY -m PyInstaller (Join-Path $ROOT "jarvis.spec") --noconfirm `
+$specFile = if (Test-Path (Join-Path $ROOT "ultron.spec")) { Join-Path $ROOT "ultron.spec" } else { Join-Path $ROOT "jarvis.spec" }
+& $PY -m PyInstaller $specFile --noconfirm `
       --distpath (Join-Path $ROOT "dist") --workpath (Join-Path $ROOT "build")
 
 if ($LASTEXITCODE -ne 0) {
@@ -85,7 +88,11 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$exe = if ($OneFile) { Join-Path $ROOT "dist\JARVIS.exe" } else { Join-Path $ROOT "dist\JARVIS\JARVIS.exe" }
+$exe = if ($OneFile) { Join-Path $ROOT "dist\ULTRON.exe" } else { Join-Path $ROOT "dist\ULTRON\ULTRON.exe" }
+if (-not (Test-Path $exe)) {
+    # Geriye dönük uyumluluk: eski isimle derlendiyse
+    $exe = if ($OneFile) { Join-Path $ROOT "dist\JARVIS.exe" } else { Join-Path $ROOT "dist\JARVIS\JARVIS.exe" }
+}
 if (-not (Test-Path $exe)) {
     Write-Host "Beklenen cikti bulunamadi: $exe" -ForegroundColor Red
     exit 1

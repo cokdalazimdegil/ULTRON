@@ -39,6 +39,7 @@ TEST_MODULES = [
     ("Phase 9: Companion Mode", "test_companion_mode"),
     ("Phase 10: UI, Logs, Swarm & Research", "test_ui_logs_swarm_research"),
     ("Phase 11: CPU & Resource Optimizations", "test_cpu_optimization"),
+    ("Phase 12: Actions & Central Security", "test_actions_security"),
 ]
 
 

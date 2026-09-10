@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title JARVIS — Telefon icin guvenlik duvari izni
+title ULTRON — Telefon icin guvenlik duvari izni
 
 :: ============================================================
 ::  NE ISE YARAR
-::  Telefon ayni Wi-Fi uzerinden JARVIS'e baglanirken Windows
+::  Telefon ayni Wi-Fi uzerinden ULTRON'a baglanirken Windows
 ::  Guvenlik Duvari gelen baglantiyi engelleyebilir. Bu dosya
 ::  SADECE 8765-8766 portlarina gelen baglantiya izin verir.
 ::
@@ -25,25 +25,26 @@ if %errorlevel% neq 0 (
 
 echo.
 echo ============================================================
-echo   JARVIS — Telefon baglantisi icin guvenlik duvari izni
+echo   ULTRON — Telefon baglantisi icin guvenlik duvari izni
 echo ============================================================
 echo.
 
+netsh advfirewall firewall delete rule name="ULTRON Telefon" >nul 2>&1
 netsh advfirewall firewall delete rule name="JARVIS Telefon" >nul 2>&1
-netsh advfirewall firewall add rule name="JARVIS Telefon" dir=in action=allow protocol=TCP localport=8765-8766 profile=any
+netsh advfirewall firewall add rule name="ULTRON Telefon" dir=in action=allow protocol=TCP localport=8765-8766 profile=any
 
 if %errorlevel% equ 0 (
     echo.
     echo   [TAMAM] Izin verildi.
-    echo   Simdi JARVIS'te TELEFON panelini yeniden baslat ve QR'i okut.
+    echo   Simdi ULTRON'da TELEFON panelini yeniden baslat ve QR'i okut.
 ) else (
     echo.
     echo   [HATA] Kural eklenemedi.
-    echo   Windows Guvenlik Duvari ayarlarindan JARVIS'e elle izin ver.
+    echo   Windows Guvenlik Duvari ayarlarindan ULTRON'a elle izin ver.
 )
 
 echo.
 echo   Izni geri almak icin:
-echo     netsh advfirewall firewall delete rule name="JARVIS Telefon"
+echo     netsh advfirewall firewall delete rule name="ULTRON Telefon"
 echo.
 pause

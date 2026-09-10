@@ -1,16 +1,16 @@
 @echo off
 chcp 65001 >nul
-title JARVIS — Teshis raporu
+title ULTRON — Teshis raporu
 
 :: ============================================================
 ::  Telefon calismiyorsa bu dosyaya cift tikla. Masaustune
-::  "JARVIS_TESHIS.txt" yazar; o dosyayi gonderirsen sorunun
+::  "ULTRON_TESHIS.txt" yazar; o dosyayi gonderirsen sorunun
 ::  nerede oldugu tahmine gerek kalmadan gorulur.
 ::
 ::  Sifre, API anahtari veya kisisel dosya TOPLAMAZ.
 :: ============================================================
 
-set "OUT=%USERPROFILE%\Desktop\JARVIS_TESHIS.txt"
+set "OUT=%USERPROFILE%\Desktop\ULTRON_TESHIS.txt"
 set "LOGS=%TEMP%\jarvis_web_logs"
 
 echo.
@@ -18,12 +18,13 @@ echo   Teshis calisiyor, birkac saniye surer...
 echo.
 
 echo ================================================> "%OUT%"
-echo  JARVIS TESHIS RAPORU>> "%OUT%"
+echo  ULTRON TESHIS RAPORU>> "%OUT%"
 echo  Tarih: %DATE% %TIME%>> "%OUT%"
 echo ================================================>> "%OUT%"
 echo.>> "%OUT%"
 
-echo [1] CALISAN JARVIS SURECLERI>> "%OUT%"
+echo [1] CALISAN ULTRON SURECLERI>> "%OUT%"
+tasklist /FI "IMAGENAME eq ULTRON.exe" >> "%OUT%" 2>&1
 tasklist /FI "IMAGENAME eq JARVIS.exe" >> "%OUT%" 2>&1
 tasklist /FI "IMAGENAME eq cloudflared.exe" >> "%OUT%" 2>&1
 echo.>> "%OUT%"
@@ -45,9 +46,9 @@ echo [5] GUVENLIK DUVARI DURUMU>> "%OUT%"
 netsh advfirewall show allprofiles state >> "%OUT%" 2>&1
 echo.>> "%OUT%"
 
-echo [6] JARVIS GUVENLIK DUVARI KURALLARI>> "%OUT%"
+echo [6] ULTRON GUVENLIK DUVARI KURALLARI>> "%OUT%"
 echo (Action=Block olan varsa telefon SESSIZCE engellenir)>> "%OUT%"
-powershell -NoProfile -Command "Get-NetFirewallRule -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*jarvis*' } | Select-Object DisplayName,Direction,Action,Enabled | Format-Table -AutoSize | Out-String" >> "%OUT%" 2>&1
+powershell -NoProfile -Command "Get-NetFirewallRule -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*ultron*' -or $_.DisplayName -like '*jarvis*' } | Select-Object DisplayName,Direction,Action,Enabled | Format-Table -AutoSize | Out-String" >> "%OUT%" 2>&1
 echo.>> "%OUT%"
 
 echo [7] SUNUCU GUNLUGU (server.log)>> "%OUT%"

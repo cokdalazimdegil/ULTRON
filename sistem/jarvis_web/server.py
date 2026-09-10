@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+import threading
 
 import asyncio
 import argparse
@@ -729,7 +730,57 @@ async def broadcast_system_status(payload: dict):
             pass
 
 
+# ── Kimlik Doğrulama & Kilit Yönetimi (Lockout & Session TTL) ──────────────────
+MAX_FAILED_AUTH = 5
+LOCKOUT_DURATION_SEC = 900    # 15 dakika kilit
+SESSION_TTL_SEC = 14400       # 4 saat maksimum oturum süresi
+
+_failed_auth_attempts: dict[str, list[float]] = {}
+_locked_ips: dict[str, float] = {}
+_active_sessions: dict[str, float] = {}
+
+def is_ip_locked(client_ip: str) -> bool:
+    now = time.time()
+    if client_ip in _locked_ips:
+        if now < _locked_ips[client_ip]:
+            return True
+        del _locked_ips[client_ip]
+        _failed_auth_attempts.pop(client_ip, None)
+    return False
+
+def record_auth_failure(client_ip: str) -> bool:
+    now = time.time()
+    attempts = _failed_auth_attempts.setdefault(client_ip, [])
+    attempts = [t for t in attempts if now - t < LOCKOUT_DURATION_SEC]
+    attempts.append(now)
+    _failed_auth_attempts[client_ip] = attempts
+    if len(attempts) >= MAX_FAILED_AUTH:
+        _locked_ips[client_ip] = now + LOCKOUT_DURATION_SEC
+        print(f"[Sunucu] 🚨 IP {client_ip} çok fazla başarısız deneme nedeniyle 15 dakika kilitlendi!", flush=True)
+        return True
+    return False
+
+def record_auth_success(client_ip: str, token_str: str) -> None:
+    _failed_auth_attempts.pop(client_ip, None)
+    _locked_ips.pop(client_ip, None)
+    now = time.time()
+    if token_str and token_str not in _active_sessions:
+        _active_sessions[token_str] = now
+
+def is_session_expired(token_str: str) -> bool:
+    if not token_str:
+        return True
+    created = _active_sessions.get(token_str)
+    if created is None:
+        _active_sessions[token_str] = time.time()
+        return False
+    if time.time() - created > SESSION_TTL_SEC:
+        return True
+    return False
+
+
 # ── Cloudflare Quick Tunnel Yöneticisi ────────────────────────────────────────
+# Varsayılan: "SADECE YEREL AĞ (LAN)". Tünel sadece kullanıcı açıkça etkinleştirirse açılır.
 TUNNEL_URL = ""
 TUNNEL_PROC = None
 
@@ -756,10 +807,26 @@ def _start_cloudflare_tunnel(port: int = 8765):
                 print(f"[Sunucu] 🌐 Cloudflare Quick Tunnel Açıldı: {TUNNEL_URL}", flush=True)
                 break
     except Exception as e:
-        print(f"[Sunucu] Cloudflare tunel hatasi: {e}", flush=True)
+        print(f"[Sunucu] Cloudflare tünel hatası: {e}", flush=True)
 
-import threading
-threading.Thread(target=lambda: _start_cloudflare_tunnel(8765), daemon=True).start()
+def _stop_cloudflare_tunnel():
+    global TUNNEL_URL, TUNNEL_PROC
+    if TUNNEL_PROC:
+        try:
+            TUNNEL_PROC.terminate()
+            TUNNEL_PROC.wait(timeout=2)
+        except Exception:
+            pass
+        TUNNEL_PROC = None
+    TUNNEL_URL = ""
+    print("[Sunucu] 🔒 Cloudflare Tüneli Kapatıldı.", flush=True)
+
+# Tünel varsayılan olarak KAPALIDIR (Sadece yerel ağ). Yalnızca yapılandırma açıksa başlatılır:
+_REMOTE_ACCESS = os.environ.get("ULTRON_ENABLE_TUNNEL") == "1" or bool(get_app_config_value("web_remote_access", False))
+if _REMOTE_ACCESS:
+    threading.Thread(target=lambda: _start_cloudflare_tunnel(8765), daemon=True).start()
+else:
+    print("[Sunucu] 🔒 Uzaktan tünel erişimi varsayılan olarak KAPALI (Sadece Yerel Ağ aktif).", flush=True)
 
 
 # ── FastAPI uygulaması ───────────────────────────────────────────────────────
@@ -821,6 +888,24 @@ async def connection_info():
         "public_mode": PUBLIC_MODE,
         "current_voice": current_voice,
     }
+
+
+@app.post("/api/remote-access/toggle")
+async def toggle_remote_access(payload: dict = None):
+    """Cloudflare Quick Tunnel uzaktan erişimini açar veya kapatır."""
+    payload = payload or {}
+    enable = payload.get("enable")
+    if enable is None:
+        enable = not bool(TUNNEL_URL)
+
+    if enable:
+        if not TUNNEL_URL:
+            threading.Thread(target=lambda: _start_cloudflare_tunnel(8765), daemon=True).start()
+            return {"status": "ok", "message": "Tünel başlatılıyor...", "enabled": True}
+        return {"status": "ok", "message": "Tünel zaten aktif.", "enabled": True, "tunnel_url": TUNNEL_URL}
+    else:
+        _stop_cloudflare_tunnel()
+        return {"status": "ok", "message": "Tünel kapatıldı. Sadece yerel ağ devrede.", "enabled": False}
 
 
 @app.post("/api/allow-firewall")
@@ -931,7 +1016,8 @@ async def webhook_generic_event(payload: dict, request: Request):
     # Auth kontrolü
     if not PUBLIC_MODE:
         req_token = payload.get("token", "") or request.query_params.get("token", "")
-        if req_token != TOKEN:
+        valid_tokens = {TOKEN, os.environ.get("ULTRON_WEB_TOKEN", "")} - {""}
+        if req_token not in valid_tokens:
             return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
 
     # Rate limit
@@ -991,7 +1077,8 @@ async def webhook_homeassistant(payload: dict, request: Request):
     # Auth
     if not PUBLIC_MODE:
         req_token = payload.get("token", "") or request.query_params.get("token", "")
-        if req_token != TOKEN:
+        valid_tokens = {TOKEN, os.environ.get("ULTRON_WEB_TOKEN", "")} - {""}
+        if req_token not in valid_tokens:
             return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
 
     # Rate limit
@@ -1056,7 +1143,8 @@ async def webhook_location_update(payload: dict, request: Request):
     # Auth
     if not PUBLIC_MODE:
         req_token = payload.get("token", "") or request.query_params.get("token", "")
-        if req_token != TOKEN:
+        valid_tokens = {TOKEN, os.environ.get("ULTRON_WEB_TOKEN", "")} - {""}
+        if req_token not in valid_tokens:
             return {"status": "error", "message": "Yetkisiz erişim", "code": 401}
 
     # Rate limit
@@ -1620,7 +1708,20 @@ def _check_token(ws: WebSocket) -> bool:
     # Herkese açık modda ortak token yok — herkes kendi API anahtarıyla girer
     if PUBLIC_MODE:
         return True
-    return ws.query_params.get("token", "") == TOKEN
+    client_ip = ws.client.host if ws.client else "127.0.0.1"
+    if is_ip_locked(client_ip):
+        print(f"[Sunucu] 🔒 Kilitli IP bağlantı denemesi reddedildi: {client_ip}", flush=True)
+        return False
+    token_val = ws.query_params.get("token", "")
+    if token_val != TOKEN:
+        is_locked = record_auth_failure(client_ip)
+        print(f"[Sunucu] ⚠️ Hatalı token ile WebSocket bağlantı denemesi (IP: {client_ip})", flush=True)
+        return False
+    if is_session_expired(token_val):
+        print(f"[Sunucu] ⌛ Oturum süresi dolmuş token (IP: {client_ip})", flush=True)
+        return False
+    record_auth_success(client_ip, token_val)
+    return True
 
 
 @app.websocket("/ws/client")

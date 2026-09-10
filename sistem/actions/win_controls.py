@@ -24,6 +24,23 @@ def control_system(action: str, value: int | str | None = None) -> str:
       - sleep (bilgisayarı uyut)
     """
     action = str(action or "").strip().lower()
+
+    from core.security_manager import security_engine, RiskLevel, is_untrusted_content
+
+    decision = security_engine.authorize(
+        "win_controls",
+        target=action,
+        params={"action": action, "value": value},
+        is_untrusted=is_untrusted_content(str(value or ""))
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (Sistem Eylemi Engellendi):\n"
+            f"Eylem: {action}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}"
+        )
     
     # ── SES KONTROLLERİ ──────────────────────────────────────────
     if action in ("volume_set", "set_volume"):

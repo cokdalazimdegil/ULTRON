@@ -1,24 +1,22 @@
 #!/bin/bash
-# JARVIS — macOS Otomatik Başlatma KALDIR
+# ULTRON — macOS Otomatik Başlatma KALDIR
 # Kullanım: bash autostart_kaldir.sh
-
-PLIST_DST="$HOME/Library/LaunchAgents/com.alp.jarvis.plist"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║  J.A.R.V.I.S  Otomatik Başlatma     ║"
+echo "║  U.L.T.R.O.N  Otomatik Başlatma     ║"
 echo "║         Kaldırılıyor...              ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 
-if [ ! -f "$PLIST_DST" ]; then
-    echo "ℹ️  Kurulu değil, yapacak bir şey yok."
-    exit 0
-fi
-
-launchctl unload "$PLIST_DST" 2>/dev/null && echo "✅ LaunchAgent durduruldu"
-rm -f "$PLIST_DST" && echo "✅ Plist silindi"
+for srv in "com.ultron.assistant" "com.alp.jarvis"; do
+    plist="$HOME/Library/LaunchAgents/${srv}.plist"
+    if [ -f "$plist" ]; then
+        launchctl unload "$plist" 2>/dev/null && echo "✅ $srv servisi durduruldu"
+        rm -f "$plist" && echo "✅ $plist silindi"
+    fi
+done
 
 echo ""
-echo "✔️  JARVIS artık otomatik açılmayacak."
+echo "✔️  ULTRON artık otomatik açılmayacak."
 echo ""

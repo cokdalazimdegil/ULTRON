@@ -1,27 +1,30 @@
 #!/bin/bash
-# JARVIS — macOS Otomatik Başlatma KURULUM
+# ULTRON — macOS Otomatik Başlatma KURULUM
 # Kullanım: bash autostart_kur.sh
 # Plist'i bu bilgisayara göre dinamik üretir — sabit kullanıcı yolu gömmez.
 
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLIST_DST="$HOME/Library/LaunchAgents/com.alp.jarvis.plist"
+PLIST_DST="$HOME/Library/LaunchAgents/com.ultron.assistant.plist"
+LEGACY_PLIST="$HOME/Library/LaunchAgents/com.alp.jarvis.plist"
 PYTHON_BIN="$(command -v python3 || echo /usr/bin/python3)"
 PYTHON_DIR="$(dirname "$PYTHON_BIN")"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   J.A.R.V.I.S  Otomatik Başlatma    ║"
+echo "║   U.L.T.R.O.N  Otomatik Başlatma    ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 
 # LaunchAgents dizinini oluştur (yoksa)
 mkdir -p "$HOME/Library/LaunchAgents"
 
-# Zaten yüklüyse önce kaldır
-if launchctl list com.alp.jarvis &>/dev/null; then
-    echo "⚙️  Önceki servis kaldırılıyor..."
-    launchctl unload "$PLIST_DST" 2>/dev/null
-fi
+# Zaten yüklüyse veya eski servis varsa önce kaldır
+for srv in "com.ultron.assistant" "com.alp.jarvis"; do
+    if launchctl list "$srv" &>/dev/null; then
+        echo "⚙️  Önceki servis ($srv) kaldırılıyor..."
+        launchctl unload "$HOME/Library/LaunchAgents/${srv}.plist" 2>/dev/null
+    fi
+done
 
 # Plist'i bu makineye göre üret
 cat > "$PLIST_DST" <<EOF
@@ -31,7 +34,7 @@ cat > "$PLIST_DST" <<EOF
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.alp.jarvis</string>
+    <string>com.ultron.assistant</string>
     <key>ProgramArguments</key>
     <array>
         <string>${PYTHON_BIN}</string>
@@ -44,9 +47,9 @@ cat > "$PLIST_DST" <<EOF
     <key>KeepAlive</key>
     <false/>
     <key>StandardOutPath</key>
-    <string>${BASE_DIR}/jarvis.log</string>
+    <string>${BASE_DIR}/ultron.log</string>
     <key>StandardErrorPath</key>
-    <string>${BASE_DIR}/jarvis_error.log</string>
+    <string>${BASE_DIR}/ultron_error.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -68,12 +71,12 @@ echo "╔═══════════════════════�
 echo "║           Kurulum Tamam!             ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "📌 JARVIS artık Mac'e her girişte otomatik açılır."
-echo "   Loglar: $BASE_DIR/jarvis.log"
+echo "📌 ULTRON artık Mac'e her girişte otomatik açılır."
+echo "   Loglar: $BASE_DIR/ultron.log"
 echo ""
 echo "⚠️  macOS Sonoma/Ventura'da ilk seferde:"
 echo "   Sistem Ayarları → Genel → Oturum Açma Öğeleri"
-echo "   → 'JARVIS' öğesini izin ver"
+echo "   → 'ULTRON' öğesine izin ver"
 echo ""
 echo "🛑 Kaldırmak için: bash autostart_kaldir.sh"
 echo ""

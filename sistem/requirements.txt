@@ -1,43 +1,48 @@
 # ULTRON — Full System Requirements (macOS + Windows)
 # ─────────────────────────────────────────────────────────────
+# DOKÜMANTASYON: Requirements Dosyaları Ayrımı:
+# 1) sistem/requirements.txt: ULTRON ana çalışma ortamı (Desktop HUD, Otonom Servisler,
+#    RAG, Ses, Görsel, Test ve Güvenlik Katmanı) için gereken tüm paketler.
+# 2) sistem/jarvis_web/requirements.txt: Web ve mobil uzaktan erişim için gereken
+#    minimal hafif sunucu bağımlılıkları.
+# (Not: Eski stock_trend_platform prototip bağımlılıkları temizlenmiştir.)
+# ─────────────────────────────────────────────────────────────
 
-# ── Core AI & LLM ────────────────────────────────────────────
-google-genai>=1.0.0
-chromadb>=0.5.0
+# ── Core AI, LLM & Workspace ─────────────────────────────────
+google-genai>=1.0.0,<2.0.0
+chromadb>=0.5.0,<1.0.0
+google-api-python-client>=2.100.0,<3.0.0
+google-auth-oauthlib>=1.0.0,<2.0.0
+google-auth-httplib2>=0.2.0,<1.0.0
 
-# ── Voice Biometrics & Audio ─────────────────────────────────
-onnxruntime>=1.18.0
-scipy>=1.12.0
+# ── Voice, Audio & Speech ────────────────────────────────────
 numpy>=1.26.0,<2.0.0
-SpeechRecognition>=3.10.0
-pyaudio>=0.2.14
+SpeechRecognition>=3.10.0,<4.0.0
+pyaudio>=0.2.14,<1.0.0
 
 # ── Computer Vision & Screen Awareness ───────────────────────
-opencv-python>=4.8.0
-Pillow>=10.0.0
+opencv-python>=4.8.0,<5.0.0
+Pillow>=10.0.0,<12.0.0
 
 # ── Web, Streaming & Networking ──────────────────────────────
-fastapi>=0.110.0
-uvicorn[standard]>=0.29.0
-websockets>=12.0
-requests>=2.31.0
-cryptography>=42.0.0
-qrcode>=7.4.0
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.29.0,<1.0.0
+websockets>=12.0,<15.0
+requests>=2.31.0,<3.0.0
+cryptography>=42.0.0,<45.0.0
+qrcode>=7.4.0,<9.0.0
 
 # ── System Automation & Desktop UI ───────────────────────────
-psutil>=5.9.0
-pywebview[cef]>=5.0.0
+psutil>=5.9.0,<7.0.0
+pywebview[cef]>=5.0.0,<6.0.0
 
 # ── Windows Platform Specific ────────────────────────────────
-pywin32>=306; sys_platform == "win32"
-mss>=9.0.0; sys_platform == "win32"
-pyttsx3>=2.90; sys_platform == "win32"
-pywinauto>=0.6.8; sys_platform == "win32"
-telethon
-py-tgcalls
-pydub
+pywin32>=306,<310; sys_platform == "win32"
+mss>=9.0.0,<10.0.0; sys_platform == "win32"
+pyttsx3>=2.90,<3.0.0; sys_platform == "win32"
+keyboard>=0.13.5,<1.0.0; sys_platform == "win32"
 
-# ── ULTRON 4.0 / 5.0 Ek Bağımlılıklar ────────────────────────
-keyboard>=0.13.5; sys_platform == "win32"
-pyyaml>=6.0.1
-
+# ── Configuration & Testing ──────────────────────────────────
+pyyaml>=6.0.1,<7.0.0
+pytest>=8.0.0,<10.0.0
+pytest-asyncio>=0.23.0,<2.0.0

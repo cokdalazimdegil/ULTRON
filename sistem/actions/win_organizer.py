@@ -37,7 +37,14 @@ from app_paths import data_path
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Takvim ve animsaticilar kullanici verisidir → yazilabilir koke
 STORE_PATH = data_path("memory", "calendar_store.json")
-ICS_PATH = data_path("memory", "jarvis_calendar.ics")
+LEGACY_ICS_PATH = data_path("memory", "jarvis_calendar.ics")
+ICS_PATH = data_path("memory", "ultron_calendar.ics")
+if not ICS_PATH.exists() and LEGACY_ICS_PATH.exists():
+    try:
+        import shutil
+        shutil.copy2(LEGACY_ICS_PATH, ICS_PATH)
+    except Exception:
+        pass
 
 OUTLOOK_TIMEOUT = 12.0
 
@@ -270,7 +277,7 @@ def _event_from_record(record: dict) -> dict | None:
     return {
         "start_ts": _to_ts(start),
         "end_ts": _to_ts(end),
-        "calendar": str(record.get("calendar_name", "") or "JARVIS"),
+        "calendar": str(record.get("calendar_name", "") or "ULTRON"),
         "title": str(record.get("title", "")).strip() or "Adsiz etkinlik",
         "location": str(record.get("location", "") or ""),
         "all_day": bool(record.get("all_day", False)),
@@ -424,7 +431,7 @@ def create_event(payload: dict) -> tuple[bool, str, dict | None]:
     if not event:
         return False, "Etkinlik kaydedildi ama okunamadi.", None
     if not record["calendar_name"]:
-        event["calendar"] = "JARVIS"
+        event["calendar"] = "ULTRON"
     return True, "", event
 
 

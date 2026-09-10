@@ -62,6 +62,24 @@ def _find_first_youtube_video(query: str) -> str | None:
 
 
 def browser_control(action: str, url: str = None, query: str = None) -> str:
+    from core.security_manager import security_engine, RiskLevel, is_untrusted_content
+
+    target_val = url or query or ""
+    decision = security_engine.authorize(
+        "browser_control",
+        target=target_val,
+        params={"action": action, "url": url, "query": query},
+        is_untrusted=is_untrusted_content(target_val)
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (Tarayıcı Eylemi Engellendi):\n"
+            f"Hedef: {target_val}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}"
+        )
+
     if action == "open_url":
         if not url:
             return "URL belirtilmedi."

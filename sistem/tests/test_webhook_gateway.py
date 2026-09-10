@@ -34,6 +34,8 @@ from core.events import EventSource, EventPriority
 
 client = TestClient(srv.app)
 AUTH_TOKEN = "test-secret-token-123"
+srv.TOKEN = AUTH_TOKEN
+srv.PUBLIC_MODE = False
 
 
 def test_generic_webhook_success():

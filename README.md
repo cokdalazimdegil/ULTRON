@@ -4,7 +4,7 @@
 *(Ultimate Lightweight Telemetric Real-time Orchestration Network)*
 
 <p align="center">
-  <img src="sistem/Icon/JARVIS.ico" width="130" alt="ULTRON Logo">
+  <img src="sistem/Icon/ULTRON.ico" width="130" alt="ULTRON Logo">
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/AI%20Core-Gemini%20Live%20%7C%20OpenClaw-orange.svg" alt="AI Core">
-  <img src="https://img.shields.io/badge/Tests-80%2F80%20PASSED%20(100%25)-success.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-92%2F92%20PASSED%20(100%25)-success.svg" alt="Tests">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </p>
 

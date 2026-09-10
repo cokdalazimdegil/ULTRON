@@ -422,6 +422,23 @@ def send_email(to_address: str, subject: str, body: str) -> str:
     if not to_address or not subject:
         return "Alıcı adresi ve konu boş olamaz."
 
+    from core.security_manager import security_engine, RiskLevel, is_untrusted_content
+
+    decision = security_engine.authorize(
+        "email_send",
+        target=to_address,
+        params={"subject": subject, "body_len": len(body or "")},
+        is_untrusted=is_untrusted_content(body or subject)
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (E-Posta Gönderimi Engellendi):\n"
+            f"Alıcı: {to_address}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}"
+        )
+
     # 1. Outlook Masaüstü (Windows) ile Göndermeyi Dene
     if os.name == "nt":
         try:

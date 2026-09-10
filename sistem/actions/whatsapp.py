@@ -641,6 +641,25 @@ def send_whatsapp_message(
     if not message or not message.strip():
         return "Mesaj bos olamaz."
 
+    from core.security_manager import security_engine, RiskLevel, is_untrusted_content
+
+    # Merkezi Güvenlik Katmanı Yetkilendirmesi
+    target_id = recipient_name or phone_number or "unknown"
+    decision = security_engine.authorize(
+        "whatsapp_send",
+        target=target_id,
+        params={"message": message, "send_now": send_now, "phone_number": phone_number},
+        is_untrusted=is_untrusted_content(message)
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (WhatsApp Gönderimi Engellendi):\n"
+            f"Hedef: {target_id}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}"
+        )
+
     app_target = (app_target or "auto").strip().lower()
     if app_target not in {"auto", "desktop", "web"}:
         app_target = "auto"

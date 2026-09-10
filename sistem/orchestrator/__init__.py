@@ -65,13 +65,10 @@ from orchestrator.telemetry import (
 
 from orchestrator.supervisor import (
     SupervisorEngine,
-    supervisor_engine,
-    AgentResult
-)
-
-from orchestrator.supervisor_2 import (
     SupervisorEngine2,
+    supervisor_engine,
     supervisor_engine_v2,
+    AgentResult,
     MasterTaskDAG,
     SubTaskNode,
     TaskLifecycleState,

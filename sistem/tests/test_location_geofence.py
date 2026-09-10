@@ -202,11 +202,11 @@ def test_event_bus_location_listener():
 
 def test_ha_bridge_person_home_triggers_presence():
     """HA'dan gelen person.nuri 'home' durumu PresenceEngine'i user_present yapar."""
-    engine = PresenceEngine()
-    engine.reset()
+    from core.presence_engine import presence_engine
+    presence_engine.reset()
     bus = EventBus()
     bus.reset()
-    engine._bus = bus
+    presence_engine._bus = bus
 
     ha = HomeAssistantBridge()
     ha._bus = bus
@@ -219,7 +219,7 @@ def test_ha_bridge_person_home_triggers_presence():
     })
 
     # PresenceEngine UNKNOWN -> USER_PRESENT geçmeli
-    assert engine.get_state().value == "user_present"
+    assert presence_engine.get_state().value == "user_present"
     print("  [PASS] HA person.nuri 'home' -> PresenceEngine USER_PRESENT")
 
 

@@ -11,42 +11,34 @@ from pathlib import Path
 from actions.platform_utils import IS_WIN, quiet_popen_kwargs
 
 
-# Yalnızca geri dönüşü olmayan yıkıcı formatlama/silme komutlarını engelle
-BLOCKED_COMMON = [
-    "mkfs",
-    "dd if=",
-    ":(){:|:&};:",
-]
-
-BLOCKED_MAC = [
-    "rm -rf /",
-    "diskutil erase",
-    "diskutil apfs deletecontainer",
-]
-
-BLOCKED_WIN = [
-    "format c:",
-    "clear-disk",
-    "remove-partition",
-]
+from core.security_manager import security_engine, RiskLevel, is_untrusted_content
 
 
-def _blocked_patterns() -> list[str]:
-    return BLOCKED_COMMON + (BLOCKED_WIN if IS_WIN else BLOCKED_MAC)
-
-
-def shell_run(command: str, cwd: str = "", timeout: int = 45) -> str:
+def shell_run(command: str, cwd: str = "", timeout: int = 45, is_untrusted: bool = False) -> str:
     """
     Sistem terminalinde PowerShell veya bash komutları çalıştırır.
-    Dosya işlemleri, git, ağ analizleri, python betikleri, sistem durumu vb. için kullanılır.
+    Tüm komutlar çalıştırmadan önce merkezi security_engine üzerinden yetkilendirilir.
+    RiskLevel.CRITICAL ise çalıştırmayı durdurur ve onay ister; HIGH ise audit log'a yazar.
     """
     if not command or not command.strip():
         return "Hata: Komut belirtilmedi."
 
-    cmd_lower = command.lower()
-    for blocked in _blocked_patterns():
-        if blocked in cmd_lower:
-            return f"Güvenlik Uyarısı: Bu komut engellendi → {blocked.strip()}"
+    # Merkezi Güvenlik Katmanı Yetkilendirmesi
+    decision = security_engine.authorize(
+        "shell_run",
+        target=command,
+        params={"cwd": cwd},
+        is_untrusted=is_untrusted or is_untrusted_content(command)
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (İşlem Engellendi):\n"
+            f"Komut: {command}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}\n"
+            f"{decision.warning_message}"
+        )
 
     work_dir = str(Path(cwd).expanduser().resolve()) if cwd and Path(cwd).exists() else None
 

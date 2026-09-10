@@ -7,7 +7,9 @@ Dosya okuma, yazma, dizin listeleme ve dosya arama işlemleri.
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
+from core.security_manager import security_engine, RiskLevel, is_untrusted_content
 
 
 def file_operations(
@@ -15,17 +17,36 @@ def file_operations(
     path: str = "",
     content: str = "",
     search_query: str = "",
+    is_untrusted: bool = False,
 ) -> str:
     """
     action:
       - read: Belirtilen dosyanın içeriğini okur
       - write: Belirtilen dosyaya yazar (oluşturur/üzerine yazar)
       - append: Dosyanın sonuna metin ekler
+      - delete: Belirtilen dosyayı veya dizini siler (güvenlik denetimli)
       - list: Belirtilen dizindeki dosya ve klasörleri listeler
       - search: Belirtilen dizinde veya dosya adlarında arama yapar
     """
     action = str(action or "read").strip().lower()
     target_path = Path(path).expanduser().resolve() if path else Path.cwd()
+
+    # Merkezi Güvenlik Yetkilendirmesi
+    decision = security_engine.authorize(
+        "file_tools",
+        target=str(target_path),
+        params={"action": action, "content_len": len(content or "")},
+        is_untrusted=is_untrusted or is_untrusted_content(content or path)
+    )
+
+    if not decision.allowed or decision.risk_level == RiskLevel.CRITICAL:
+        return (
+            f"🚫 Güvenlik Uyarısı (İşlem Engellendi):\n"
+            f"Dosya/Dizin: {target_path}\n"
+            f"İşlem: {action}\n"
+            f"Risk Seviyesi: {decision.risk_level.value}\n"
+            f"Gerekçe: {decision.reason}"
+        )
 
     if action in ("read", "oku"):
         if not target_path.exists():
@@ -104,4 +125,19 @@ def file_operations(
         except Exception as e:
             return f"Arama sırasında hata: {e}"
 
-    return f"Bilinmeyen dosya işlemi: {action}. (Desteklenenler: read, write, append, list, search)"
+    if action in ("delete", "sil", "remove"):
+        if not path:
+            return "Hata: Silinecek dosya veya dizin yolu belirtilmedi."
+        if not target_path.exists():
+            return f"Hata: Silinecek '{target_path}' öğesi bulunamadı."
+        try:
+            if target_path.is_file():
+                target_path.unlink()
+                return f"✓ Dosya başarıyla silindi: {target_path}"
+            elif target_path.is_dir():
+                shutil.rmtree(target_path)
+                return f"✓ Dizin ve içeriği başarıyla silindi: {target_path}"
+        except Exception as e:
+            return f"Silme işlemi sırasında hata: {e}"
+
+    return f"Bilinmeyen dosya işlemi: {action}. (Desteklenenler: read, write, append, delete, list, search)"
