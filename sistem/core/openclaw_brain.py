@@ -189,9 +189,19 @@ class OpenClawBrain:
                 logger.warning("[OpenClaw Brain] Agent uyarısı/hatası: %s", res.stderr[:200])
         except subprocess.TimeoutExpired:
             logger.error("[OpenClaw Brain] Komut yanıt süresi aşıldı.")
+            try:
+                from core.self_healing import self_healing_engine
+                self_healing_engine.diagnose("OpenClaw command timed out after 28s", component="openclaw_brain")
+            except Exception:
+                pass
             return "⚠️ [OpenClaw Brain] Yanıt zaman aşımına uğradı."
         except Exception as exc:
             logger.error("[OpenClaw Brain] Komut yürütme hatası: %s", exc)
+            try:
+                from core.self_healing import self_healing_engine
+                self_healing_engine.diagnose(exc, component="openclaw_brain")
+            except Exception:
+                pass
 
         return ""
 

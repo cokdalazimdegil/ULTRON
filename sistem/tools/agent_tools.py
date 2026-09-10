@@ -40,10 +40,9 @@ AGENT_TOOLS = [   {   'description': "Tarayıcıda URL açar, Google'da arama ya
                                                        'type': 'STRING'}},
                           'required': ['url'],
                           'type': 'OBJECT'}},
-    {   'description': 'Hızlı web araması yapar ve ilk birkaç sonucun içeriğini okur. Güncel '
-                       "haberler, fiyatlar, bilgiler veya belirli bir URL'nin içeriğini okumak "
-                       "için kullan. Örnek: 'yapay zeka haberleri', 'Python 3.12 yenilikleri', "
-                       "'https://example.com'",
+    {   'description': 'Hızlı canlı web araması yapar ve ilk birkaç sonucun içeriğini okur. Güncel haberler, '
+                       'yeni çıkan ürünler/teknolojiler, yazılım sürümleri, anlık fiyatlar, olgusal sorgular '
+                       "veya belirli bir URL'nin içeriğini okumak için birincil canlı araştırma aracıdır.",
         'name': 'web_search',
         'parameters': {   'properties': {   'max_chars': {   'description': 'Döndürülecek maksimum '
                                                                             'karakter sayısı '
@@ -205,12 +204,11 @@ AGENT_TOOLS = [   {   'description': "Tarayıcıda URL açar, Google'da arama ya
                                                                 'type': 'STRING'}},
                           'required': ['product_name'],
                           'type': 'OBJECT'}},
-    {   'description': "ULTRON'un otonom derin analiz ve canlı araştırma beynine danışır (OpenClaw & Hibrit Motor). "
-                       "Kullanıcı yeni çıkan ürünler (örn: iPhone Duo, yeni modeller), donanım özellikleri, güncel haberler, "
-                       "karmaşık teknik sorular, kod yazımı veya internet araştırması istediğinde KESİNLİKLE bu aracı çağır. "
-                       "Beyinden ve canlı internetten gelen doğrulanmış cevabı alıp kullanıcıya aktar.",
+    {   'description': "ULTRON'un otonom derin akıl yürütme, mimari analiz ve stratejik araştırma beynine danışır (OpenClaw & Hibrit Motor). "
+                       "Kullanıcı karmaşık teknik mimari analiz, çok adımlı problem çözme, kodlama stratejileri, "
+                       "derinlemesine sentez veya 'OpenClaw ne düşünüyor', 'analiz et' dediğinde bu aracı çağır.",
         'name': 'ask_openclaw_brain',
-        'parameters': {   'properties': {   'query': {   'description': 'Araştırılacak soru, yeni çıkan ürün veya konu.',
+        'parameters': {   'properties': {   'query': {   'description': 'Stratejik olarak analiz edilecek veya araştırılacak konu/talimat.',
                                                          'type': 'STRING'}},
                           'required': ['query'],
                           'type': 'OBJECT'}}]

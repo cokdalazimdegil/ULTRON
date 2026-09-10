@@ -99,12 +99,24 @@ class SelfHealer:
             from orchestrator.gemini_reasoning import query_gemini_reasoning
             from core.event_bus import bus
 
+            # Hata sınıflandırma ve teşhis
+            category_str = "UNKNOWN"
+            severity_str = "MEDIUM"
+            try:
+                from core.self_healing import self_healing_engine
+                diag = self_healing_engine.diagnose(error, component=tool_name)
+                category_str = diag.category.value
+                severity_str = diag.severity
+            except Exception:
+                pass
+
             # Önce hangi dosyanın sorumlu olduğunu bulmaya çalış
             tool_file = self._infer_file(tool_name)
 
             prompt = f"""
 Sen ULTRON'sun. Kendi sisteminde '{tool_name}' adlı araç şu hatayla çöküyor:
 
+HATA KATEGORİSİ: {category_str} (Önem: {severity_str})
 HATA: {error}
 
 {f'TRACEBACK:{chr(10)}{traceback_str[:500]}' if traceback_str else ''}
@@ -119,7 +131,8 @@ Türkçe yaz.
             suggestion = query_gemini_reasoning(prompt)
 
             report = (
-                f"🔧 [OTO-ONARIM] '{tool_name}' aracında {MAX_FAILURES_BEFORE_REPAIR} ardışık hata tespit edildi.\n"
+                f"🔧 [OTO-ONARIM] '{tool_name}' aracında {MAX_FAILURES_BEFORE_REPAIR} ardışık hata tespit edildi "
+                f"[{category_str} / {severity_str}].\n"
                 f"Hata: {error[:150]}\n"
                 f"Önerilen düzeltme:\n{suggestion or 'Analiz tamamlanamadı.'}"
             )
@@ -134,16 +147,29 @@ Türkçe yaz.
         mapping = {
             "web_search": "actions/research_engine.py",
             "deep_research": "actions/research_engine.py",
+            "ask_openclaw_brain": "core/openclaw_brain.py",
+            "openclaw_brain_query": "core/openclaw_brain.py",
+            "shopping_action": "computer/shopping_engine.py",
+            "start_swarm_project": "orchestrator/swarm_manager.py",
+            "orchestrate_task": "orchestrator/multi_agent.py",
+            "autonomous_task": "orchestrator/multi_agent.py",
             "open_app": "actions/open_app.py",
             "shell_run": "actions/shell.py",
+            "computer_control": "computer/grounded_computer.py",
+            "browser_action": "computer/browser_manager.py",
+            "screen_awareness": "computer/screen_awareness.py",
             "send_whatsapp": "actions/whatsapp.py",
             "play_media": "actions/media.py",
             "get_weather": "actions/weather.py",
             "trigger_phone_call": "actions/twilio_caller.py",
             "analyze_screen": "actions/screen_vision.py",
             "control_system": "actions/win_controls.py",
+            "save_memory": "memory/memory_manager.py",
+            "delete_memory": "memory/memory_manager.py",
+            "rag_search": "memory/rag_manager.py",
+            "rag_index": "memory/rag_manager.py",
         }
-        return mapping.get(tool_name, f"actions veya jarvis_web/agent.py")
+        return mapping.get(tool_name, "actions veya jarvis_web/agent.py")
 
     def get_stats(self) -> dict:
         with self._healer_lock:

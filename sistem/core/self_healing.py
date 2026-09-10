@@ -86,13 +86,13 @@ class SelfHealingEngine:
         tb_str = traceback.format_exc().lower() if isinstance(exc, Exception) else ""
         combined = f"{exc_class} {err_str} {tb_str}"
 
-        if any(w in combined for w in ("modulenotfounderror", "importerror", "no module named")):
+        if any(w in combined for w in ("modulenotfounderror", "importerror", "no module named", "cannot import name")):
             return ErrorCategory.DEPENDENCY
-        elif any(w in combined for w in ("timeout", "timed out", "timeouterror", "deadline exceeded")):
+        elif any(w in combined for w in ("timeout", "timed out", "timeouterror", "deadline exceeded", "timedout")):
             return ErrorCategory.TIMEOUT
-        elif any(w in combined for w in ("connectionerror", "connectionrefused", "gaierror", "socket", "network", "websockets")):
+        elif any(w in combined for w in ("connectionerror", "connectionrefused", "connection refused", "gaierror", "socket", "network", "websockets", "refused by peer", "broken pipe", "connection reset")):
             return ErrorCategory.NETWORK
-        elif any(w in combined for w in ("permissionerror", "access is denied", "yetki", "permission denied")):
+        elif any(w in combined for w in ("permissionerror", "access is denied", "yetki", "permission denied", "forbidden")):
             return ErrorCategory.PERMISSION
         elif any(w in combined for w in ("memoryerror", "disk full", "out of memory", "no space left")):
             return ErrorCategory.RESOURCE

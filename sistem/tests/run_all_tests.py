@@ -41,6 +41,7 @@ TEST_MODULES = [
     ("Phase 11: CPU & Resource Optimizations", "test_cpu_optimization"),
     ("Phase 12: Actions & Central Security", "test_actions_security"),
     ("Phase 13: Runtime Fixes & Stability", "test_runtime_fixes"),
+    ("Phase 14: Grounding & Self-Healing", "test_knowledge_grounding_and_fallback"),
 ]
 
 

@@ -140,15 +140,46 @@ def _bing_search(query: str, max_results: int = 5) -> list:
         return []
 
 
+def _duckduckgo_lite_search(query: str, max_results: int = 7) -> list:
+    """DuckDuckGo Lite HTML arama (ikincil hızlı yedek sağlayıcı)."""
+    try:
+        import requests
+        resp = requests.post(
+            "https://lite.duckduckgo.com/lite/",
+            data={"q": query, "kl": "tr-tr"},
+            headers={**_HEADERS, "Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10
+        )
+        resp.raise_for_status()
+        html = resp.text
+        results = []
+        links = re.findall(r'<a[^>]+class="result-link"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, flags=re.DOTALL | re.IGNORECASE)
+        snippets = re.findall(r'<td[^>]+class="result-snippet"[^>]*>(.*?)</td>', html, flags=re.DOTALL | re.IGNORECASE)
+        for i, (href, title) in enumerate(links[:max_results]):
+            real_url = href
+            uddg = re.search(r'uddg=([^&]+)', href)
+            if uddg:
+                real_url = unquote(uddg.group(1))
+            if not real_url.startswith("http"):
+                continue
+            snippet = _clean_html(snippets[i], 300) if i < len(snippets) else ""
+            results.append({"title": _clean_html(title, 120), "url": real_url, "snippet": snippet})
+        return results
+    except Exception as e:
+        logger.warning(f"[Research] DuckDuckGo Lite hatası: {e}")
+        return []
+
+
 def _search_with_fallback(query: str, max_results: int = 7) -> list:
     """
-    DuckDuckGo → Wikipedia → Bing fallback zinciri.
+    DuckDuckGo → DuckDuckGo-Lite → Wikipedia → Bing fallback zinciri.
     Her birini 2 kez dener, 1s aralıkla.
     """
     providers = [
-        ("DuckDuckGo", _duckduckgo_search),
-        ("Wikipedia",  _wikipedia_search),
-        ("Bing",       _bing_search),
+        ("DuckDuckGo",      _duckduckgo_search),
+        ("DuckDuckGo-Lite", _duckduckgo_lite_search),
+        ("Wikipedia",       _wikipedia_search),
+        ("Bing",            _bing_search),
     ]
     for name, fn in providers:
         for attempt in range(2):
@@ -160,7 +191,7 @@ def _search_with_fallback(query: str, max_results: int = 7) -> list:
             except Exception as e:
                 logger.warning(f"[Research] {name} deneme {attempt+1} başarısız: {e}")
             if attempt == 0:
-                time.sleep(1.0)
+                time.sleep(0.8)
     logger.error(f"[Research] Tüm arama sağlayıcıları başarısız: '{query}'")
     return []
 
@@ -201,59 +232,29 @@ def _save_report(query: str, report_md: str) -> str:
 # ── Gemini Sentez ─────────────────────────────────────────────────────────────
 
 def _synthesize_with_gemini(query: str, combined_sources: str) -> str:
-    """Gemini 2.0 Flash ile kaynak sentezi. API yoksa boş döner."""
-    api_key = os.environ.get("GEMINI_API_KEY", "") or ""
-    if not api_key:
-        # app_config'ten dene
-        try:
-            from app_config import get_app_config_value
-            api_key = str(get_app_config_value("gemini_api_key", "") or "")
-        except Exception:
-            pass
-    if not api_key:
-        return ""
-    import time
+    """Gemini çoklu model akıl yürütme motoru ile kaynak sentezi. API yoksa boş döner."""
+    today_str = datetime.datetime.now().strftime('%d %B %Y')
+    synthesis_prompt = (
+        f"Aşağıdaki web kaynaklarını kullanarak '{query}' konusunda kapsamlı bir "
+        f"Türkçe araştırma raporu oluştur.\n\n"
+        f"Rapor formatı:\n"
+        f"# {query} — Araştırma Raporu\n"
+        f"**Tarih:** {today_str}\n\n"
+        f"## Yönetici Özeti\n"
+        f"## Temel Bulgular\n"
+        f"## Detaylı Analiz\n"
+        f"## Sonuç ve Değerlendirme\n"
+        f"## Kaynaklar\n\n"
+        f"---\nHAM VERİLER:\n{combined_sources[:14000]}"
+    )
     try:
-        import google.genai as genai
-        import google.genai.types as gtypes
-        client = genai.Client(api_key=api_key)
-        today_str = datetime.datetime.now().strftime('%d %B %Y')
-        synthesis_prompt = (
-            f"Aşağıdaki web kaynaklarını kullanarak '{query}' konusunda kapsamlı bir "
-            f"Türkçe araştırma raporu oluştur.\n\n"
-            f"Rapor formatı:\n"
-            f"# {query} — Araştırma Raporu\n"
-            f"**Tarih:** {today_str}\n\n"
-            f"## Yönetici Özeti\n"
-            f"## Temel Bulgular\n"
-            f"## Detaylı Analiz\n"
-            f"## Sonuç ve Değerlendirme\n"
-            f"## Kaynaklar\n\n"
-            f"---\nHAM VERİLER:\n{combined_sources[:14000]}"
-        )
-        
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                resp = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=synthesis_prompt,
-                    config=gtypes.GenerateContentConfig(temperature=0.3, max_output_tokens=4096)
-                )
-                return resp.text or ""
-            except Exception as e:
-                err_str = str(e)
-                if "503" in err_str or "429" in err_str or "quota" in err_str.lower():
-                    logger.warning(f"[Research] Gemini yoğunluk hatası (Deneme {attempt+1}/{max_retries}): {e}")
-                    if attempt < max_retries - 1:
-                        time.sleep(5) # 5 saniye bekle ve tekrar dene
-                        continue
-                logger.warning(f"[Research] Gemini sentez hatası: {e}")
-                return ""
-                
+        from orchestrator.gemini_reasoning import query_gemini_reasoning
+        res = query_gemini_reasoning(synthesis_prompt, model_tier="flash", temperature=0.3)
+        if res and len(res.strip()) > 30:
+            return res.strip()
     except Exception as e:
-        logger.warning(f"[Research] Gemini kütüphane hatası: {e}")
-        return ""
+        logger.warning(f"[Research] Gemini reasoning sentez hatası: {e}")
+    return ""
 
 
 def _build_fallback_report(query: str, results: list) -> str:
@@ -350,11 +351,14 @@ async def run_research(
 
 def simple_web_search(query_or_url: str, max_chars: int = 4000) -> str:
     """Hızlı tek sorgu: URL ise içeriği getir, değilse arama yap."""
-    if query_or_url.startswith(("http://", "https://")):
-        return _fetch_url(query_or_url, max_chars)
-    results = _search_with_fallback(query_or_url, max_results=3)
+    query_clean = (query_or_url or "").strip()
+    if not query_clean:
+        return "Arama sorgusu boş olamaz."
+    if query_clean.startswith(("http://", "https://")):
+        return _fetch_url(query_clean, max_chars)
+    results = _search_with_fallback(query_clean, max_results=3)
     if not results:
-        return f"'{query_or_url}' için sonuç bulunamadı."
+        return f"'{query_clean}' için sonuç bulunamadı."
     parts = []
     for r in results[:3]:
         content = _fetch_url(r["url"], max_chars // 3)
