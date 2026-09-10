@@ -32,6 +32,22 @@ class OpenClawBrain:
         self._process: Optional[subprocess.Popen] = None
         self._enabled = True
 
+    def is_enabled(self) -> bool:
+        """OpenClaw'un aktif olup olmadığını kontrol eder. İstenirse çevre değişkeni veya konfig ile devre dışı bırakılabilir."""
+        if os.environ.get("ULTRON_DISABLE_OPENCLAW") in ("1", "true", "True"):
+            return False
+        try:
+            from app_config import get_app_config_value
+            cfg = get_app_config_value("openclaw_enabled", True)
+            if cfg is False:
+                return False
+        except Exception:
+            pass
+        return self._enabled
+
+    def set_enabled(self, enabled: bool) -> None:
+        self._enabled = enabled
+
     def _get_exe(self) -> str:
         """Sistem üzerindeki openclaw çalıştırılabilir yolunu bulur."""
         found = shutil.which("openclaw")
@@ -41,6 +57,10 @@ class OpenClawBrain:
 
     def start_gateway(self) -> bool:
         """OpenClaw Gateway servisini başlatır (çalışmıyorsa)."""
+        if not self.is_enabled():
+            logger.info("ℹ️ [OpenClaw Brain] OpenClaw devre dışı; ULTRON yerel otonom motor modunda çalışıyor.")
+            return True
+
         if self.ping():
             logger.info("🦞 [OpenClaw Brain] Gateway zaten çalışıyor (Port %d).", self.port)
             return True
@@ -78,6 +98,8 @@ class OpenClawBrain:
 
     def ping(self) -> bool:
         """Gateway servisinin erişilebilir olup olmadığını kontrol eder."""
+        if not self.is_enabled():
+            return True
         try:
             req = urllib.request.Request(f"{self.gateway_url}/health", method="GET")
             with urllib.request.urlopen(req, timeout=1.5) as resp:
@@ -111,6 +133,8 @@ class OpenClawBrain:
 
     def ask(self, prompt: str, session_id: str = "default") -> str:
         """Kullanıcı girdisini OpenClaw Beyni'ne aktarır ve ajan yanıtını döndürür."""
+        if not self.is_enabled():
+            return ""
         if not prompt or not prompt.strip():
             return ""
 
@@ -174,41 +198,47 @@ class OpenClawBrain:
     def ask_with_fallback(self, prompt: str, session_id: str = "default") -> str:
         """
         Kullanıcı isteğini OpenClaw Beyni'ne iletir.
-        Eğer OpenClaw gecikir, zaman aşımına uğrar veya yanıt vermezse,
-        otomatik olarak yerel Gemini Pro / Deep Research Synthesizer devreye girer.
+        Eğer OpenClaw devre dışıysa, gecikir veya zaman aşımına uğrarsa,
+        otomatik olarak yerel Gemini Pro ve canlı web sentezleme motoru devreye girer.
         """
         if not prompt or not prompt.strip():
             return ""
 
-        res = self.ask(prompt, session_id=session_id)
-        if res and not res.startswith("⚠️") and len(res.strip()) > 10:
-            return res
+        if self.is_enabled():
+            res = self.ask(prompt, session_id=session_id)
+            if res and not res.startswith("⚠️") and len(res.strip()) > 15:
+                return res
 
-        logger.info("[OpenClaw Brain] 🔄 OpenClaw çevrimdışı veya zaman aşımında; ULTRON derin analiz motoru devreye girdi.")
-        # 1. Gemini Pro Derin Akıl Yürütme motoru
+        logger.info("[OpenClaw Brain] 🔄 Yerel derin analiz ve canlı web araştırma motoru devreye alındı.")
+        
+        # 1. Canlı web araması (Güncel haberler, ürün özellikleri ve son dakika duyuruları için)
+        web_context = ""
+        try:
+            from actions.research_engine import simple_web_search
+            web_context = simple_web_search(prompt[:120], max_chars=3500)
+        except Exception as err:
+            logger.debug(f"[OpenClaw Brain] Web arama hatası: {err}")
+
+        # 2. Gemini Pro Derin Akıl Yürütme motoru
         try:
             from orchestrator.gemini_reasoning import query_gemini_reasoning
             system_prompt = (
                 "Sen ULTRON'un otonom stratejik analiz ve derin araştırma beynisin. "
-                "Kullanıcının sorusunu veya araştırma konusunu derinlemesine analiz et, "
-                "yapılandırılmış, net, teknik ve kapsamlı bir stratejik rapor olarak sun."
+                "Kullanıcının sorusunu veya araştırma konusunu derinlemesine analiz et. "
+                "Eğer güncel web arama sonuçları verildiyse, o verileri eksiksiz kullanarak "
+                "yapılandırılmış, teknik, tarafsız ve kapsamlı bir stratejik rapor sun."
             )
-            fallback_res = query_gemini_reasoning(prompt, system_instruction=system_prompt, model_tier="pro", temperature=0.6)
+            full_prompt = f"{prompt}\n\n[GÜNCEL WEB ARAŞTIRMA VERİLERİ]:\n{web_context}" if web_context else prompt
+            fallback_res = query_gemini_reasoning(full_prompt, system_instruction=system_prompt, model_tier="pro", temperature=0.5)
             if fallback_res and len(fallback_res.strip()) > 20:
                 return fallback_res
         except Exception as e:
             logger.debug(f"[OpenClaw Brain] Gemini Pro fallback hatası: {e}")
 
-        # 2. Yerel Araştırma & Web Sentezleme
-        try:
-            from actions.research_engine import simple_web_search
-            search_res = simple_web_search(prompt[:120], max_chars=3000)
-            if search_res:
-                return f"🔍 [Derin Araştırma Bulguları]:\n\n{search_res}"
-        except Exception:
-            pass
+        if web_context:
+            return f"🔍 [Canlı Web Araştırma Bulguları]:\n\n{web_context}"
 
-        return res or "Derin analiz ve araştırma tamamlanamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin."
+        return "İstenen konu hakkında detaylı araştırma tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
 
 # Global singleton örneği
 openclaw_brain = OpenClawBrain()

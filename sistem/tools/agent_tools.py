@@ -205,16 +205,12 @@ AGENT_TOOLS = [   {   'description': "Tarayıcıda URL açar, Google'da arama ya
                                                                 'type': 'STRING'}},
                           'required': ['product_name'],
                           'type': 'OBJECT'}},
-    {   'description': "ULTRON'un arkasındaki otonom OpenClaw AI Beynine danışır. Kullanıcı "
-                       'karmaşık bir soru sorduğunda, kod yazımı, teknik analiz, çok adımlı '
-                       'planlama, internet araştırması veya derin zeka gerektiren herhangi bir '
-                       'konu istediğinde KESİNLİKLE bu aracı çağır. OpenClaw beyninden gelen '
-                       'cevabı alıp kullanıcıya aktar.',
+    {   'description': "ULTRON'un otonom derin analiz ve canlı araştırma beynine danışır (OpenClaw & Hibrit Motor). "
+                       "Kullanıcı yeni çıkan ürünler (örn: iPhone Duo, yeni modeller), donanım özellikleri, güncel haberler, "
+                       "karmaşık teknik sorular, kod yazımı veya internet araştırması istediğinde KESİNLİKLE bu aracı çağır. "
+                       "Beyinden ve canlı internetten gelen doğrulanmış cevabı alıp kullanıcıya aktar.",
         'name': 'ask_openclaw_brain',
-        'parameters': {   'properties': {   'query': {   'description': 'OpenClaw beynine '
-                                                                        'yöneltilecek detaylı '
-                                                                        'soru, komut, araştırma '
-                                                                        'konusu veya görev.',
+        'parameters': {   'properties': {   'query': {   'description': 'Araştırılacak soru, yeni çıkan ürün veya konu.',
                                                          'type': 'STRING'}},
                           'required': ['query'],
                           'type': 'OBJECT'}}]
