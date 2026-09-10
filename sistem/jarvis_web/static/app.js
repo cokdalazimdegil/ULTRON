@@ -2368,38 +2368,39 @@ class AntigravitySpatialEngine {
     if (this.hasGsap && window.gsap) {
       const tl = window.gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      // HUD Üst Sol: 3D rotasyonla yumuşak süzülme
+      // HUD Üst Sol: Yumuşak süzülme
       tl.from('#hud-top-left', {
-        duration: 1.1,
-        y: -45,
-        rotationX: 20,
-        opacity: 0
+        duration: 0.9,
+        y: -30,
+        opacity: 0,
+        clearProps: "transform,opacity"
       }, 0.1);
 
       // HUD Üst Sağ: Kontrol kapsülü süzülüşü
       tl.from('#hud-top-right', {
-        duration: 1.1,
-        y: -45,
-        rotationX: 20,
-        opacity: 0
-      }, 0.2);
-
-      // Butonların sırayla kademeli (staggered) belirmesi
-      tl.from('.btn-hud-action, .visualizer-capsule', {
-        duration: 0.8,
-        scale: 0.82,
+        duration: 0.9,
+        y: -30,
         opacity: 0,
-        stagger: 0.05,
-        ease: 'back.out(1.5)'
-      }, 0.35);
+        clearProps: "transform,opacity"
+      }, 0.15);
+
+      // Butonların sırayla kademeli belirmesi (sadece top-actions içindekiler)
+      tl.from('#hud-top-right .btn-hud-action, #hud-top-right .visualizer-capsule', {
+        duration: 0.6,
+        scale: 0.9,
+        opacity: 0,
+        stagger: 0.04,
+        ease: 'back.out(1.4)',
+        clearProps: "transform,opacity,scale"
+      }, 0.3);
 
       // HUD Alt Komut Adası: Ağırlıksız yukarı yükseliş
       tl.from('#hud-bottom', {
-        duration: 1.2,
-        y: 65,
-        rotationX: -20,
-        opacity: 0
-      }, 0.25);
+        duration: 1.0,
+        y: 45,
+        opacity: 0,
+        clearProps: "opacity"
+      }, 0.2);
     }
   }
 
