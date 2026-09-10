@@ -146,7 +146,10 @@
           <span class="log-title-icon">⚡</span>
           <span>NEURAL INTERFACE // TERMINAL</span>
         </div>
-        <button id="btn-close-log" class="log-header-btn" title="Kapat">✕</button>
+        <div class="log-header-actions">
+          <button id="btn-copy-chat-log" class="log-header-btn" title="Sohbet ve Komut Loglarını Kopyala" onclick="copyChatLogs()">📋</button>
+          <button id="btn-close-log" class="log-header-btn" title="Kapat">✕</button>
+        </div>
       </div>
       <div id="log"></div>
     </div>
@@ -243,6 +246,7 @@
       <div class="modal-header">
         <div class="modal-title" id="report-modal-title">📋 ARAŞTIRMA VE GÖREV RAPORU</div>
         <div style="display:flex;gap:10px;align-items:center;">
+          <button id="btn-copy-report" class="btn-hud-action" title="Raporu Kopyala" onclick="copyReportContent()">📋 KOPYALA</button>
           <button id="btn-download-report" class="btn-hud-action" title="Raporu İndir (.md)">⬇ İNDİR</button>
           <button id="btn-close-report" class="modal-close-btn" title="Kapat">✕</button>
         </div>
@@ -288,6 +292,7 @@
           <span>ULTRON // SİSTEM LOGLARI & TELEMETRİ</span>
         </div>
         <div class="logs-header-actions">
+          <button class="btn-hud-action btn-sm" id="btn-copy-system-logs" onclick="copySystemLogs()" title="Tüm Sistem Loglarını Kopyala">📋 KOPYALA</button>
           <button class="btn-hud-action btn-sm" onclick="clearSystemLogs()" title="Logları Temizle">🗑️ TEMİZLE</button>
           <button class="btn-hud-action btn-sm" onclick="refreshSystemLogs()" title="Yenile">🔄 YENİLE</button>
           <button class="modal-close-btn" onclick="toggleSystemLogs()" title="Kapat">✕</button>

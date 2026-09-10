@@ -2083,6 +2083,142 @@ window.clearSystemLogs = async function() {
   }
 };
 
+// ── Evrensel Pano Kopyalama Yardımcısı ─────────────────────────────────────
+async function copyToClipboard(text) {
+  if (!text) return false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('[Clipboard] navigator.clipboard hatası, fallback deneniyor:', e);
+    }
+  }
+  // Geriye dönük uyumlu textarea fallback
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return Boolean(ok);
+  } catch (err) {
+    console.error('[Clipboard] Kopyalama başarısız:', err);
+    return false;
+  }
+}
+
+// ── Sistem & Telemetri Loglarını Kopyalama ───────────────────────────────────
+window.copySystemLogs = async function() {
+  const btn = document.getElementById('btn-copy-system-logs');
+  if (!_systemLogs || _systemLogs.length === 0) {
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '⚠️ LOG YOK';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    }
+    return;
+  }
+
+  const filtered = _systemLogs.filter(item => {
+    if (_activeLogFilter === 'ALL') return true;
+    if (_activeLogFilter === 'EVENT') return item.level === 'EVENT' || item.logger === 'event_bus';
+    return String(item.level).toUpperCase() === _activeLogFilter;
+  });
+
+  const lines = filtered.map(log => {
+    const time = log.time ? `[${log.time}] ` : '';
+    const level = log.level ? `[${log.level}] ` : '';
+    const logger = log.logger ? `[${log.logger}] ` : '';
+    return `${time}${level}${logger} ${log.message || ''}`.trim();
+  });
+
+  const textToCopy = lines.join('\n');
+  const ok = await copyToClipboard(textToCopy);
+
+  if (btn) {
+    const orig = btn.innerHTML;
+    if (ok) {
+      btn.innerHTML = '✓ KOPYALANDI';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.classList.remove('copied');
+      }, 2000);
+    } else {
+      btn.innerHTML = '❌ HATA';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+  }
+};
+
+// ── Sohbet & Konsol Loglarını Kopyalama ──────────────────────────────────────
+window.copyChatLogs = async function() {
+  const btn = document.getElementById('btn-copy-chat-log');
+  const log = document.getElementById('log');
+  if (!log || log.children.length === 0) {
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '⚠️';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    }
+    return;
+  }
+
+  const rows = Array.from(log.querySelectorAll('.row'));
+  const lines = rows.map(r => r.innerText.trim()).filter(Boolean);
+  if (lines.length === 0) return;
+
+  const textToCopy = lines.join('\n');
+  const ok = await copyToClipboard(textToCopy);
+
+  if (btn) {
+    const orig = btn.innerHTML;
+    if (ok) {
+      btn.innerHTML = '✓';
+      btn.classList.add('copied');
+      btn.title = 'Sohbet logları panoya kopyalandı!';
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.classList.remove('copied');
+        btn.title = 'Sohbet ve Komut Loglarını Kopyala';
+      }, 2000);
+    } else {
+      btn.innerHTML = '❌';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+  }
+};
+
+// ── Rapor İçeriğini Kopyalama ────────────────────────────────────────────────
+window.copyReportContent = async function() {
+  const btn = document.getElementById('btn-copy-report');
+  if (!_lastReportData || !_lastReportData.content) {
+    return;
+  }
+  const ok = await copyToClipboard(_lastReportData.content);
+  if (btn) {
+    const orig = btn.innerHTML;
+    if (ok) {
+      btn.innerHTML = '✓ KOPYALANDI';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.classList.remove('copied');
+      }, 2000);
+    } else {
+      btn.innerHTML = '❌ HATA';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+  }
+};
+
 window.filterSystemLogs = function(filter) {
   _activeLogFilter = filter || 'ALL';
   document.querySelectorAll('.log-filter-btn').forEach(btn => {

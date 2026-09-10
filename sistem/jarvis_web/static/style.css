@@ -436,18 +436,24 @@ html, body {
   color: var(--ultron);
 }
 
+.log-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .log-header-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   border-radius: 8px;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   transition: all 0.2s ease;
 }
 
@@ -455,6 +461,15 @@ html, body {
   color: #ffffff;
   background: rgba(255, 68, 34, 0.2);
   border-color: var(--ultron);
+  transform: translateY(-1px);
+}
+
+.log-header-btn.copied,
+.btn-hud-action.copied {
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
 }
 
 #log {
